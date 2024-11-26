@@ -7,9 +7,9 @@
 
 .gitignore
 lintstagedrc.json
-bun.lockdb
+bun.lockb
 eslint.config.js
 tsconfig.json
+tsconfig.build.json
 
 tests/
-src/
