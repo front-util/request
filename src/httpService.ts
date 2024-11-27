@@ -63,7 +63,7 @@ const errorParser = async (response: Response) => {
     }
 };
 
-export const nativeRequest = async <T>({
+export const nativeRequest = async <T = unknown>({
     url,
     responseType = 'json',
     params,

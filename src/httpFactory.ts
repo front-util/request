@@ -1,5 +1,4 @@
 import { nativeRequest } from './httpService';
-import { JSONTypeInterceptor } from './request_interceptors/JSONType';
 import { 
     NativeHttpInterceptorsParams, 
     RequestConfig, 
@@ -7,12 +6,8 @@ import {
     Interceptor
 } from './types';
 
-export const baseInterceptors = [
-    JSONTypeInterceptor
-] as Interceptor[];
-
 export const createHttpService = ({ baseURL, ...initConfig }: {baseURL: string;} & RequestConfig) => {
-    const interceptors: Interceptor[] = [];
+    let interceptors: Interceptor[] = [];
 
     const request = <T>({ url, params, ...options }: NativeHttpRequestParamsWithAdapapter<T>) => {
         const modifiedConfig = interceptors.reduce((acc, interceptor) => {
@@ -37,20 +32,24 @@ export const createHttpService = ({ baseURL, ...initConfig }: {baseURL: string;}
         request,
         interceptors: {
             request: {
-                use: (interceptor: Interceptor) => {
+                length: interceptors.length,
+                use   : (interceptor: Interceptor) => {
                     interceptors.push(interceptor);
+                },
+                remove: (interceptor: Interceptor) => {
+                    interceptors = interceptors.filter((val) => val !== interceptor);
                 },
             },
         },
     };
 };
 
-export const initHttpService = (baseURL: string) => {
+export const initHttpService = (baseURL: string, externalInterceptors: Interceptor[] = []) => {
     const service = createHttpService({
         baseURL,
     });
 
-    baseInterceptors.forEach((interceptor) => {
+    externalInterceptors.forEach((interceptor) => {
         service.interceptors.request.use(interceptor);
     });
     return service;

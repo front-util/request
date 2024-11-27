@@ -68,7 +68,9 @@ export interface HttpService {
     request: <T>({ url, params, ...options }: NativeHttpRequestParams) => Promise<HttpRequestResult<T>>;
     interceptors: {
         request: {
-            use: (interceptor: (config: NativeHttpInterceptorsParams) => NativeHttpInterceptorsParams) => void;
+            length: number;
+            use: (interceptor: Interceptor) => void;
+            remove: (interceptor: Interceptor) => void;
         };
     };
 }
