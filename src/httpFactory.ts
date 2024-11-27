@@ -53,4 +53,5 @@ export const initHttpService = (baseURL: string) => {
     baseInterceptors.forEach((interceptor) => {
         service.interceptors.request.use(interceptor);
     });
+    return service;
 };
