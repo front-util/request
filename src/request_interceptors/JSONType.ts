@@ -1,6 +1,7 @@
 import { RequestConfig } from '../types';
 
-const jsonTypeRequestMap = ['POST', 'PUT', 'PATCH', 'DELETE'];
+const jsonTypeRequestNames = ['POST', 'PUT', 'PATCH', 'DELETE'];
+const jsonTypeRequestMap = [...jsonTypeRequestNames, ...jsonTypeRequestNames.map((r) => r.toLowerCase())];
 
 export const JSONTypeInterceptor = (requestConfig: RequestConfig & {url: string}) => {
     const {headers, method = '',} = requestConfig;

@@ -8,6 +8,7 @@ export const blobAdapter = async <T = Blob>({response, signal, onLoadProcess,}: 
     const chunks: Uint8Array[] = [];
 
     if(!response.body) {
+        onLoadProcess?.(0, 0);
         return new Blob(chunks) as T;
     }
     const reader = response.body.getReader();

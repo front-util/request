@@ -6,7 +6,7 @@
 .nx
 
 .gitignore
-lintstagedrc.json
+.lintstagedrc.json
 bun.lockb
 eslint.config.js
 tsconfig.json

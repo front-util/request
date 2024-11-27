@@ -1,5 +1,5 @@
 import { nativeRequest } from './httpService';
-import { JSONTypeInterceptor } from './request_interceptors/requestJSONType';
+import { JSONTypeInterceptor } from './request_interceptors/JSONType';
 import { 
     NativeHttpInterceptorsParams, 
     RequestConfig, 

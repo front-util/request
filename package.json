@@ -1,6 +1,6 @@
 {
   "name": "@front-utils/request",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "native fetch request",
   "author": "IVGolubev",
   "license": "ISC",
@@ -46,7 +46,9 @@
   },
   "keywords": [
     "Javascript",
-    "Utils"
+    "Fetch",
+    "Request",
+    "Browser request"
   ],
   "engines": {
     "node": ">=18.0.0"
