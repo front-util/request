@@ -34,7 +34,7 @@ export interface RequestConfig extends RequestInit {
 
 export type NativeHttpService = ReturnType<typeof createHttpService>;
 
-export type HttpMethods = 'GET' | 'POST' | 'DELETE';
+export type HttpMethods = 'GET' | 'POST' | 'DELETE' | 'PUT' | 'PATCH';
 
 export type HttpStatusCodeExtended = (number & HttpStatusCode) | null;
 
