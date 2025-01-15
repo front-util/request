@@ -1,6 +1,6 @@
 {
   "name": "@front-utils/request",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "native fetch request",
   "author": "IVGolubev",
   "license": "ISC",
@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://git@github.com:front-util/request.git"
   },
-  "types": "./types/src/index.d.ts",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
     "./types/*": "./types/*.d.ts",
