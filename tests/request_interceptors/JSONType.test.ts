@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'bun:test';
 
-import {JSONTypeInterceptor} from '#src/request_interceptors/JSONType';
+import {JSONTypeInterceptor} from '../../src/request_interceptors/JSONType';
 
 describe('[request_interceptors/JSONType]', () => {
     // Adds Content-Type header for POST request when not provided

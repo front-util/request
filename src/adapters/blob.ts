@@ -1,4 +1,4 @@
-import { NativeHttpRequestParamsWithAdapapter } from "#src/types";
+import { NativeHttpRequestParamsWithAdapapter } from "../types";
 
 export const blobAdapter = async <T = Blob>({response, signal, onLoadProcess,}: {
     response: Response;

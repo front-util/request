@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'bun:test';
 
-import {jsonAdapter} from '#src/adapters/json';
+import {jsonAdapter} from '../../src/adapters/json';
 
 describe('[adapters/json]', () => {
     // Successfully parse valid JSON response and return typed data

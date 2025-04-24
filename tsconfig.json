@@ -8,15 +8,10 @@
     "rootDir": ".",
     "strict": true,
     "noImplicitAny": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "baseUrl": ".",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "paths": {
-      "#src/*": [
-        "./src/*"
-      ],
-    }
   },
   "exclude": [
     "node_modules",

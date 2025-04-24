@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {describe, it, expect, mock} from 'bun:test';
 
-import {blobAdapter} from '#src/adapters/blob';
+import {blobAdapter} from '../../src/adapters/blob';
 
 describe('[adapters/blob]', () => {
     // Successfully process response with body and create Blob from chunks

@@ -1,6 +1,6 @@
 {
   "name": "@front-utils/request",
-  "version": "0.1.2",
+  "version": "0.3.0",
   "description": "native fetch request",
   "author": "IVGolubev",
   "license": "ISC",
@@ -11,22 +11,20 @@
   },
   "types": "./types/src/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./types/*": "./types/*.d.ts",
-    "./types": "./types/index.d.ts",
-    "./packages": "./src/index.ts",
-    "./types/index.d.ts": "./types/index.d.ts"
-  },
-  "imports": {
-    "#src/*": "./src/*"
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "check-lint": "eslint --max-warnings=0 --fix",
     "check-types": "tsc --noEmit",
     "test": "bun test",
-    "pub": "bun run build && npm publish --access public",
-    "build-lib": "bun build ./src/index.ts --outdir ./dist --target browser --format esm --minify --external @front-utils/utils",
-    "build": "rm -rf dist && rm -rf types && bun run build-lib & tsc --p tsconfig.build.json"
+    "build:rspack": "rspack build",
+    "build:types": "tsc --p tsconfig.build.json",
+    "build": "rm -rf dist && rm -rf types && bun run build:types && bun run build:rspack",
+    "pub": "bun run build && npm publish --access public"
   },
   "browserslist": [
     "chrome > 83",
@@ -56,6 +54,7 @@
   "devDependencies": {
     "@eslint/js": "^9.13.0",
     "@front-utils/linter": "^0.9.6",
+    "@rspack/cli": "1.3.6",
     "@types/bun": "^1.1.13",
     "@types/eslint-plugin-jsx-a11y": "^6.9.0",
     "@types/eslint__js": "^8.42.3",
@@ -79,6 +78,6 @@
   },
   "peerDependencies": {},
   "dependencies": {
-    "@front-utils/utils": "^0.2.6"
+    "@front-utils/utils": "^0.3.0"
   }
 }
