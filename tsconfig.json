@@ -5,7 +5,7 @@
     "skipLibCheck": true,
     "target": "esnext",
     "module": "ESNext",
-    "rootDir": "./src",
+    "rootDir": ".",
     "strict": true,
     "noImplicitAny": true,
     "moduleResolution": "bundler",
@@ -19,7 +19,7 @@
     ".vscode"
   ],
   "include": [
-    "./src/**/*",
-    "./tests/**/*"
+    "./tests/**/*",
+    "./src/**/*"
   ]
 }

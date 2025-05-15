@@ -4,9 +4,12 @@
 .vscode/launch.json
 .version
 .nx
-
+.roo
+.qodo
 .gitignore
 .lintstagedrc.json
+
+tests
 bun.lockb
 eslint.config.js
 tsconfig.json

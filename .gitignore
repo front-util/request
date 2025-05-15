@@ -21,10 +21,11 @@ yarn-error.log*
 .vscode/launch.json
 .version
 .nx
+.roo
+.qodo
 
 # build
 build
 temp
 dist
 types
-.qodo

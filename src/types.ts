@@ -44,6 +44,7 @@ export interface ErrorResult {
     error: LoadError | null;
     status?: HttpStatusCodeExtended | -1;
     isCancelled?: boolean;
+    response?: Response;
 }
 
 export interface EmptyResult {
@@ -52,6 +53,7 @@ export interface EmptyResult {
     error?: never;
     errorData?: never;
     isCancelled?: never;
+    response: Response;
 }
 
 export interface SuccessResult<T> {
@@ -60,6 +62,7 @@ export interface SuccessResult<T> {
     error?: never;
     errorData?: never;
     isCancelled?: never;
+    response: Response;
 }
 
 export type HttpRequestResult<T> = SuccessResult<T> | ErrorResult | EmptyResult;

@@ -41,6 +41,7 @@ const errorParser = async (response: Response) => {
         error    : response.statusText,
         status   : response.status,
         errorData: null,
+        response,
     };
 
     if(!_isJSON(response)) {
@@ -102,6 +103,7 @@ export const nativeRequest = async <T = unknown>({
             });
 
         return {
+            response,
             result: await resultPromise as T,
             status: response.status,
         };
