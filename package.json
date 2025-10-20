@@ -1,6 +1,6 @@
 {
   "name": "@front-utils/request",
-  "version": "0.1.3",
+  "version": "1.0.0",
   "description": "native fetch request",
   "author": "IVGolubev",
   "license": "ISC",
@@ -21,12 +21,12 @@
     "#src/*": "./src/*"
   },
   "scripts": {
-    "check-lint": "eslint --max-warnings=0 --fix",
-    "check-types": "tsc --noEmit",
+    "check:lint": "eslint --max-warnings=0 --fix",
+    "check:types": "tsc --noEmit",
     "test": "bun test",
     "pub": "bun run build && npm publish --access public",
-    "build-lib": "bun build ./src/index.ts --outdir ./dist --target browser --format esm --minify --external @front-utils/utils",
-    "build": "rm -rf dist && rm -rf types && bun run build-lib & tsc --p tsconfig.build.json"
+    "build:lib": "bun build ./src/index.ts --outdir ./dist --target browser --format esm --minify --external @sinclair/typebox --external @preact/signals",
+    "build": "rm -rf dist && rm -rf types && bun run build:lib & tsc --p tsconfig.build.json"
   },
   "browserslist": [
     "chrome > 83",
@@ -54,31 +54,32 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.13.0",
-    "@front-utils/linter": "^0.9.6",
-    "@types/bun": "^1.1.13",
-    "@types/eslint-plugin-jsx-a11y": "^6.9.0",
-    "@types/eslint__js": "^8.42.3",
-    "@types/node": "^22.9.1",
-    "bun": "^1.1.36",
-    "eslint": "^9.13.0",
+    "@eslint/js": "^9.38.0",
+    "@front-utils/linter": "^1.3.0",
+    "@types/node": "^22.18.11",
+    "bun": "^1.3.0",
+    "eslint": "^9.38.0",
     "eslint-import-resolver-alias": "^1.1.2",
-    "eslint-import-resolver-typescript": "^3.6.3",
-    "eslint-plugin-compat": "^6.0.1",
+    "eslint-import-resolver-typescript": "^3.10.1",
+    "eslint-plugin-compat": "^6.0.2",
     "eslint-plugin-filenames": "^1.3.2",
-    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-optimize-regex": "^1.2.1",
-    "eslint-plugin-promise": ">=6.0.0",
+    "eslint-plugin-perfectionist": "^4.15.1",
+    "eslint-plugin-promise": "^7.2.1",
     "eslint-plugin-sonarjs": "^1.0.4",
-    "globals": "^15.11.0",
-    "lint-staged": "^15.2.10",
-    "simple-git-hooks": "^2.11.1",
-    "typescript": "^5.6.3",
-    "typescript-eslint": ">=8.0.0"
+    "eslint-plugin-unicorn": "^61.0.2",
+    "globals": "^15.15.0",
+    "lint-staged": "^15.5.2",
+    "simple-git-hooks": "^2.13.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.1",
+    "vitest": "^3.2.4"
   },
-  "peerDependencies": {},
   "dependencies": {
-    "@front-utils/utils": "^0.2.6"
+    "@preact/signals": "^2.3.2",
+    "@sinclair/typebox": "^0.34.41",
+    "caniuse-lite": "^1.0.30001751"
   }
 }

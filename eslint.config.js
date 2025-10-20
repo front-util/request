@@ -1,7 +1,13 @@
-import { utils } from '@front-utils/linter';
+import { configs } from '@front-utils/linter';
 
-export default utils.createEslintConfig({
-    types: ['ts'],
-    files: ['src/**/*.{ts,tsx,js}', 'tests/**/*.test.ts'],
-});
-
+export default [
+    ...configs.ts,
+    {
+        files          : ["./src/**/*.ts"],
+        languageOptions: {
+            parserOptions: {
+                project: null,
+            },
+        },
+    }
+];

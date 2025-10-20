@@ -1,8 +1,8 @@
 {
     "*.{ts,tsx}": [
-        "npm run check-lint"
+        "npm run check:lint"
     ],
     "*.{tsx,ts}": [
-        "bash -c 'npm run check-types'"
+        "bash -c 'npm run check:types'"
     ]
 }
