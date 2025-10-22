@@ -18,7 +18,8 @@
     "./types/index.d.ts": "./types/index.d.ts"
   },
   "imports": {
-    "#src/*": "./src/*"
+    "#src/*": "./src/*",
+    "#src": "./src/index.ts"
   },
   "scripts": {
     "check:lint": "eslint --max-warnings=0 --fix",
@@ -56,7 +57,7 @@
   "devDependencies": {
     "@eslint/js": "^9.38.0",
     "@front-utils/linter": "^1.3.0",
-    "@types/node": "^22.18.11",
+    "@types/node": "^22.18.12",
     "bun": "^1.3.0",
     "eslint": "^9.38.0",
     "eslint-import-resolver-alias": "^1.1.2",
@@ -74,8 +75,7 @@
     "lint-staged": "^15.5.2",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.1",
-    "vitest": "^3.2.4"
+    "typescript-eslint": "^8.46.2"
   },
   "dependencies": {
     "@preact/signals": "^2.3.2",
