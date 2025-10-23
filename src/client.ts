@@ -1,3 +1,4 @@
+import { encodeQueryParams } from '@front-utils/utils';
 import { Type } from '@sinclair/typebox';
 
 import { apiCache } from './cache';
@@ -18,27 +19,14 @@ import { buildUrlWithParams, validateSchema } from './utils';
 const METHODS_WITHOUT_BODY = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 function appendQueryParams(url: string, query: Record<string, unknown>): string {
-    const queryParams = new URLSearchParams();
+    const queryParams = encodeQueryParams(query);
+    const queryString = queryParams?.toString?.();
 
-    for(const [key, value] of Object.entries(query)) {
-        if(Array.isArray(value)) {
-            for(const v of value) {
-                if(v !== undefined && v !== null) {
-                    queryParams.append(key, String(v));
-                }
-            }
-        } else if(value !== undefined && value !== null) {
-            queryParams.set(key, String(value));
-        }
-    }
-
-    const qs = queryParams.toString();
-
-    if(!qs) return url;
+    if(!queryString) return url;
 
     const urlParts = url.split('?');
 
-    return urlParts.length > 1 ? `${urlParts[0]}?${urlParts[1]}&${qs}` : `${url}?${qs}`;
+    return urlParts.length > 1 ? `${urlParts[0]}?${urlParts[1]}&${queryString}` : `${url}?${queryString}`;
 }
 
 function validateRequest<T extends RequestConfigData>(
@@ -73,7 +61,7 @@ function validateRequest<T extends RequestConfigData>(
     if(errors.length > 0) {
         const combinedError = new ValidationError(
             errors.map((err) => err.message).join('; '),
-            Type.Any(),
+            undefined,
             undefined,
             errors
         );
@@ -145,7 +133,7 @@ export function createRepository<const Configs extends readonly RequestConfigDat
             requestConfig.query || {}
         );
 
-        validateRequest(config, requestConfig);
+        // validateRequest(config, requestConfig);
 
         const httpMethod = config.method.toUpperCase();
         const hasBody = !!requestConfig.body && !METHODS_WITHOUT_BODY.has(httpMethod);
@@ -172,3 +160,30 @@ export function createRepository<const Configs extends readonly RequestConfigDat
     return acc;
     }, {} as CreatorRepository<Configs>);
 }
+
+// const endpoints = [
+//     {
+//         name         : 'getUser',
+//         method       : 'get',
+//         path         : '/users/:id',
+//         paramsModel  : Type.Object({ id: Type.String(), }),
+//         queryModel   : Type.Object({ includePosts: Type.Optional(Type.Boolean()), }),
+//         responseModel: Type.Object({ id: Type.String(), name: Type.String(), }),
+//     },
+//     {
+//         name         : 'createUser',
+//         method       : 'post',
+//         path         : '/users',
+//         bodyModel    : Type.Object({ name: Type.String(), email: Type.String(), }),
+//         responseModel: Type.Object({ id: Type.String(), name: Type.String(), email: Type.String(), }),
+//     }
+// ] as const;
+
+// const apiClient = createApiClient({
+//     baseURL       : 'https://api.example.com',
+//     defaultHeaders: { 'Content-Type': 'application/json', },
+// });
+
+// const userRepo = createRepository(endpoints, apiClient);
+
+// const res = userRepo.getUser({});

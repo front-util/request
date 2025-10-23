@@ -1,4 +1,4 @@
-import { computed, signal } from '@preact/signals';
+import { signal } from '@preact/signals';
 
 import { apiCache } from './cache';
 import { CancellationError, HttpError, NetworkError, ParsingError, TimeoutError } from './errors';
@@ -369,30 +369,8 @@ export function createRequestInternal<TData, TError>(
         clearTimeoutIfSet();
     };
 
-    const dataComputed = computed(() => {
-        const current = stateSignal.value;
-
-        return current.type === 'success' || current.type === 'loading'
-            ? current.data
-            : undefined;
-    });
-
-    const isLoadingComputed = computed(() => stateSignal.value.type === 'loading');
-    const isErrorComputed = computed(() => stateSignal.value.type === 'error');
-    const isEmptyComputed = computed(() => stateSignal.value.type === 'empty');
-    const statusComputed = computed(() => stateSignal.value.status);
-
-    if(isGetRequest && !isRequestStoreDestroyed) {
-        executeRequestWithRetry();
-    }
-
     return {
-        state    : stateSignal,
-        data     : dataComputed,
-        isLoading: isLoadingComputed,
-        isError  : isErrorComputed,
-        isEmpty  : isEmptyComputed,
-        status   : statusComputed,
+        state: stateSignal,
         refetch,
         cancel,
         destroy,

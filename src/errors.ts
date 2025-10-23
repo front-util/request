@@ -67,9 +67,9 @@ export class ValidationError extends Error {
 
     constructor(
         message: string,
-    public schema: TSchema,
-    public data?: unknown,
-    public details?: unknown
+        public schema?: TSchema,
+        public data?: unknown,
+        public details?: unknown
     ) {
         super(`Validation Error: ${message}`);
         this.name = 'ValidationError';

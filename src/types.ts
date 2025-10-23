@@ -70,11 +70,6 @@ export type InferResponse<T> = T extends { responseModel: infer TR extends TAnyS
 
 export interface ReactiveStore<TData, TError> {
   state: ReadonlySignal<FetchState<TData, TError>>;
-  data: ReadonlySignal<TData | undefined>;
-  isLoading: ReadonlySignal<boolean>;
-  isError: ReadonlySignal<boolean>;
-  isEmpty: ReadonlySignal<boolean>;
-  status: ReadonlySignal<RequestStatus>;
   refetch: () => Promise<void>;
   cancel: () => void;
   destroy: () => void;
