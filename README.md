@@ -1,6 +1,6 @@
 # 🚀 Front-utils/request
 
-Современный HTTP-клиент для браузера с использованием нативного `fetch` API, реактивным состоянием и расширенными возможностями.
+Современный HTTP-клиент для браузера с использованием нативного `fetch` API, реактивным состоянием, строгой типизацией и расширенными возможностями.
 
 ## ✨ Особенности
 
@@ -9,7 +9,7 @@
 - 🎯 **Автоматическое кэширование** - встроенная система кэширования с TTL
 - 🔄 **Дедупликация запросов** - предотвращает дублирующиеся запросы
 - 🛡️ **Интерсепторы** - middleware для модификации запросов и ответов
-- 🔁 **Автоматический retry** - с экспоненциальным бэкоффом
+
 - 📝 **Репозиторий паттерн** - типизированные запросы с TypeBox схемами
 
 ## 📦 Установка
@@ -27,70 +27,98 @@ bun add @front-utils/request
 ### Базовое использование
 
 ```typescript
-import { createApiClient } from '@front-utils/request';
+import { createApiClient, createRepository } from '@front-utils/request';
+import Type from 'typebox';
+
+const endpoints = [
+  {
+    name: 'getUsers',
+    method: 'get' as const,
+    path: '/users',
+    responseModel: Type.Array(Type.Object({
+      id: Type.Number(),
+      name: Type.String(),
+      email: Type.String()
+    }))
+  },
+  {
+    name: 'getUser',
+    method: 'get' as const,
+    path: '/users/:id',
+    paramsModel: Type.Object({ id: Type.Number() }),
+    responseModel: Type.Object({
+      id: Type.Number(),
+      name: Type.String(),
+      email: Type.String()
+    })
+  }
+] as const;
 
 // Создаем клиент с базовым URL
 const apiClient = createApiClient({
   baseURL: 'https://jsonplaceholder.typicode.com'
 });
 
-// Создаем реактивный запрос
-const userStore = apiClient.createRequest<User>({
-  url: '/users/1',
-  method: 'GET'
-});
+// Создаем типизированный репозиторий
+const userRepository = createRepository(endpoints, apiClient);
 
-// Используем реактивные данные
-effect(() => {
-  if (userStore.data.value) {
-    console.log('User loaded:', userStore.data.value);
-  }
+// Получаем реактивный запрос с автоматической типизацией
+const userStore = userRepository.getUser({});
 
-  if (userStore.isLoading.value) {
-    console.log('Loading user...');
-  }
+// Выполняем запрос с типизированными параметрами
+await userStore.request({ urlParams: { id: 1 } });
 
-  if (userStore.isError.value) {
-    console.error('Error loading user:', userStore.error.value);
-  }
-});
+// Доступ к реактивным данным с типизацией
+const state = userStore.$state.value;
+if (state.type === 'success') console.log('User:', state.data); // { id: number, name: string, email: string }
 ```
 
 ### Использование с React
 
 ```tsx
-import { createApiClient } from '@front-utils/request';
+import { createApiClient, createRepository } from '@front-utils/request';
 import { useSignals } from '@preact/signals-react';
+import Type from 'typebox';
+
+const endpoints = [
+  {
+    name: 'getUser',
+    method: 'get' as const,
+    path: '/users/:id',
+    paramsModel: Type.Object({ id: Type.Number() }),
+    responseModel: Type.Object({
+      id: Type.Number(),
+      name: Type.String(),
+      email: Type.String()
+    })
+  }
+] as const;
 
 function UserProfile({ userId }: { userId: number }) {
-  // Создаем клиент
-  const apiClient = createApiClient({
-    baseURL: 'https://api.example.com'
-  });
+  const apiClient = createApiClient({ baseURL: 'https://api.example.com' });
+  const userRepo = createRepository(endpoints, apiClient);
+  const userStore = userRepo.getUser({});
 
-  // Создаем запрос
-  const userStore = apiClient.createRequest<User>({
-    url: `/users/${userId}`,
-    method: 'GET'
-  });
+  // Reactively update UI
+  const user = userStore.state.value.type === 'success' ? userStore.state.value.data : null;
+  const isLoading = userStore.state.value.type === 'loading';
+  const error = userStore.state.value.type === 'error' ? userStore.state.value.error : null;
+
+  React.useEffect(() => {
+    userStore.request({ urlParams: { id: userId } });
+  }, [userId]);
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {(error as Error).message}</div>;
+  if (!user) return <div>Пользователь не найден</div>;
 
   return (
     <div>
-      {userStore.isLoading.value && <div>Loading...</div>}
-      {userStore.isError.value && <div>Error: {userStore.error.value.message}</div>}
-      {userStore.data.value && (
-        <div>
-          <h1>{userStore.data.value.name}</h1>
-          <p>{userStore.data.value.email}</p>
-        </div>
-      )}
-      <button onClick={() => userStore.refetch()}>
-        Обновить
-      </button>
+      <h1>{user.name}</h1>
+      <p>{user.email}</p>
     </div>
   );
 }
-```
 
 ## 🔧 Конфигурация
 
@@ -112,49 +140,53 @@ const apiClient = createApiClient({
 });
 ```
 
-### Конфигурация запроса
+### Конфигурация запроса в репозитории
+
+Для конфигурации запроса через репозиторий, укажите базовые параметры в конечном конфиге:
 
 ```typescript
-const store = apiClient.createRequest<User>({
-  url: '/users/1',
-  method: 'GET',
+const endpoints = [
+  {
+    name: 'getUser',
+    method: 'get' as const,
+    path: '/users/:id',
+    responseModel: Type.Object({ id: Type.Number(), name: Type.String(), email: Type.String() })
+  }
+] as const;
 
-  // Кэширование
-  ttl: 5 * 60 * 1000, // 5 минут
-  cacheKey: 'user-profile', // Кастомный ключ кэша
-
-  // Retry логика
-  retries: 3,
-  retryDelay: 1000,
-  retryOn: (error) => error instanceof NetworkError,
-
-  // Валидация
-  validate: {
-    response: true,
-    onValidationError: (error) => console.error('Validation error:', error)
-  },
-
-  // Кастомные статусы для empty state
-  emptyStatusCodes: [204, 205]
+const apiClient = createApiClient({
+  baseURL: 'https://api.example.com',
+  requestInterceptors: [/* ... */]
 });
+
+const userRepo = createRepository(endpoints, apiClient);
+
+// Конфигурируем запрос с дополнительными параметрами
+await userRepo.getUser({
+  config: {
+    ttl: 5 * 60 * 1000, // Кэширование 5 минут
+    cacheKey: 'user-profile'
+  }
+}).request({ urlParams: { id: 123 } });
 ```
 
-## 🎯 Репозиторий паттерн
+## 🎯 Репозиторий паттерн с типизированными запросами
 
-### Создание репозитория
+### Создание типизированного репозитория
 
 ```typescript
 import { createRepository } from '@front-utils/request';
 import Type from 'typebox';
 
-// Определяем схемы для API
-const requestConfigs = [
+// Определяем схемы для API с типизацией
+const endpoints = [
   {
     name: 'getUser',
     method: 'get' as const,
     path: '/users/:id',
+    paramsModel: Type.Object({ id: Type.Number() }),
     queryModel: Type.Object({
-      fields: Type.String()
+      includePosts: Type.Optional(Type.Boolean())
     }),
     responseModel: Type.Object({
       id: Type.Number(),
@@ -176,37 +208,44 @@ const requestConfigs = [
       email: Type.String()
     })
   }
-];
+] as const;
 
 // Создаем репозиторий
-const userRepository = createRepository(requestConfigs, apiClient);
+const userRepository = createRepository(endpoints, apiClient);
 
 // Используем типизированные методы
-const userStore = userRepository.getUser({});
+const getUserStore = userRepository.getUser({});
 
-// Выполняем запрос с параметрами
-await userStore.request({
-  urlParams: { id: 123 },
-  query: { fields: 'id,name,email' }
+// Выполняем запрос с параметрами (типы выводятся из схем)
+await getUserStore.request({
+  urlParams: { id: 123 }, // Тип: { id: number } из paramsModel
+  query: { includePosts: true } // Тип: { includePosts?: boolean } из queryModel
 });
 
 // Доступ к реактивным данным
-effect(() => {
-  if (userStore.state.value.type === 'success') {
-    console.log('User:', userStore.state.value.data);
+useSignals(() => {
+  if (getUserStore.state.value.type === 'success') {
+    console.log('User:', getUserStore.state.value.data);
   }
 });
 
-// Повторный запрос
-await userStore.refetch();
+// Для повторного запроса используйте тот же вызов request
 
 // Создание пользователя
-const newUserStore = userRepository.createUser({});
+const createUserStore = userRepository.createUser({});
 
-await newUserStore.request({
-  body: { name: 'John Doe', email: 'john@example.com' }
+await createUserStore.request({
+  body: { name: 'John Doe', email: 'john@example.com' } // Тип: { name: string, email: string } из bodyModel
 });
 ```
+
+**Типы параметров:**
+- `urlParams` - параметры пути (если `paramsModel` определена)
+- `query` - query параметры (если `queryModel` определена)
+- `body` - тело запроса (если `bodyModel` определена)
+- `config` - дополнительные опции запроса
+
+Типы автоматически выводятся из определенных моделей в конфигурации эндпоинтов. Если модель не определена, соответствующий параметр недоступен для передачи.
 
 
 
@@ -276,46 +315,63 @@ effect(() => {
 - `invalidateCache(key)` - инвалидирует кэш по ключу
 - `clearCache()` - очищает весь кэш
 
-### `createRequest<T>(config)`
+### `createRequest<TConfig extends RequestConfigData>(config?, initialConfig)`
 
-Создает реактивный запрос.
+Создает реактивный запрос с типизацией на основе конфигурации.
 
 **Параметры:**
-- `url` - URL запроса
-- `method` - HTTP метод
-- `ttl` - время жизни кэша в миллисекундах
-- `retries` - количество попыток повторных запросов
-- `cacheKey` - кастомный ключ кэша
+- `config` - конфигурация запроса с моделями типизации (RequestConfigData)
+- `initialConfig` - базовая конфигурация запроса (RequestConfig)
 
-**Возвращает:** Реактивный store с полями:
-- `data` - реактивные данные
-- `isLoading` - состояние загрузки
-- `isError` - состояние ошибки
-- `error` - объект ошибки
-- `refetch()` - повторный запрос
+**Возвращает:** ReactiveStore<InferResponse<TConfig>, Error, TConfig> с полями:
+- `$state` - реактивное состояние типа FetchState<TData, TError>
+- `request(params: RequestParams<TConfig>)` - выполнение типизированного запроса
 - `cancel()` - отмена запроса
 - `destroy()` - очистка ресурсов
+
+Типы параметров запроса выводятся из `config`:
+- `TData` = InferResponse<TConfig>
+- `RequestParams<TConfig>` включает только доступные поля: urlParams, query, body, config
+
+### `createRepository<TConfigs extends RequestConfigData[]>(configs, apiClient)`
+
+Создает типизированный репозиторий методов API.
+
+**Параметры:**
+- `configs` - массив конфигураций эндпоинтов
+- `apiClient` - экземпляр API клиента
+
+**Возвращает:** репозиторий методов типа CreatorRepository<TConfigs>
 
 ## 🎨 Примеры использования
 
 ### Загрузка списка постов с пагинацией
 
 ```typescript
+import { createApiClient, createRepository } from '@front-utils/request';
+import Type from 'typebox';
+
+const endpoints = [
+  {
+    name: 'getPosts',
+    method: 'get' as const,
+    path: '/posts',
+    responseModel: Type.Array(Type.Object({
+      id: Type.Number(),
+      title: Type.String(),
+      body: Type.String(),
+      userId: Type.Number()
+    }))
+  }
+] as const;
+
 function PostsList() {
   const apiClient = createApiClient({ baseURL: 'https://jsonplaceholder.typicode.com' });
-
-  const postsStore = apiClient.createRequest<Post[]>({
-    url: '/posts',
-    method: 'GET',
-    ttl: 2 * 60 * 1000 // 2 минуты
-  });
+  const repo = createRepository(endpoints, apiClient);
+  const postsStore = repo.getPosts({ config: { ttl: 2 * 60 * 1000 } }); // 2 минуты
 
   return (
     <div>
-      <button onClick={() => postsStore.refetch()}>
-        Обновить посты
-      </button>
-
       {postsStore.data.value?.map(post => (
         <div key={post.id}>
           <h3>{post.title}</h3>
@@ -337,15 +393,13 @@ function CreatePost() {
 
   const createPostStore = apiClient.createRequest<Post>({
     url: '/posts',
-    method: 'POST',
-    retries: 2
+    method: 'POST'
   });
 
   const handleSubmit = async () => {
     try {
-      await createPostStore.refetch({
-        body: JSON.stringify({ title, body, userId: 1 }),
-        headers: { 'Content-Type': 'application/json' }
+      await createPostStore.request({
+        body: { title, body, userId: 1 }
       });
 
       if (createPostStore.data.value) {
@@ -412,26 +466,3 @@ const data = userStore.data.value;
 const isLoading = userStore.isLoading.value;
 const error = userStore.error.value;
 ```
-
-
-
-
-
-## 🤝 Вклад в проект
-
-Мы приветствуем вклад в развитие библиотеки! Пожалуйста, ознакомьтесь с [Contributing Guide](CONTRIBUTING.md) перед началом работы.
-
-## 📄 Лицензия
-
-ISC License - см. [LICENSE](LICENSE) файл для подробностей.
-
-## 🆘 Поддержка
-
-- 📚 [Документация](./docs)
-- 💬 [Чат сообщества](https://discord.gg/example)
-- 🐛 [Issues](https://github.com/front-util/request/issues)
-- 📧 [Email поддержки](mailto:support@example.com)
-
----
-
-**Создано с ❤️ командой Front-utils**

@@ -58,7 +58,6 @@ export type InferResponse<T> = T extends { responseModel: infer TR extends TSche
 export interface ReactiveStore<TData, TError, TConfig extends RequestConfigData> {
   $state: ReadonlySignal<FetchState<TData, TError>>;
   request: (requestParams: RequestParams<TConfig>) => Promise<void>;
-  refetch?: () => Promise<void>;
   cancel: () => void;
   destroy: () => void;
 }

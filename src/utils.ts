@@ -136,5 +136,6 @@ export function isEmptyStatus(
 }
 
 export function buildRequestUrl(url: string, baseURL: string): string {
+    if(!baseURL) return url;
     return new URL(url, baseURL).toString();
 }
