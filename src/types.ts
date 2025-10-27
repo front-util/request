@@ -1,5 +1,5 @@
 import { ReadonlySignal } from '@preact/signals';
-import { Static, TAnySchema, TObject } from '@sinclair/typebox';
+import { Static, TObject, TSchema } from 'typebox';
 
 import { CancellationError, HttpError, NetworkError, ParsingError, TimeoutError, ValidationError } from './errors';
 
@@ -13,17 +13,19 @@ export type FetchState<TData, TError> =
   | { type: 'error'; status: RequestStatus; data: undefined; error: TError | NetworkError | ParsingError | HttpError | CancellationError | ValidationError | TimeoutError };
 
 export interface RequestConfigData {
+  // uniq name for request store
   name: string;
   hostname?: string;
   method: HttpMethodTypes;
   path: string;
   queryModel?: TObject;
   paramsModel?: TObject;
-  bodyModel?: TAnySchema;
-  responseModel?: TAnySchema;
+  bodyModel?: TSchema;
+  responseModel?: TSchema;
   doc?: string;
   abortable?: boolean;
   keepalive?: boolean;
+  ttl?: number;
 }
 
 export type HttpMethodTypes = 'get' | 'post' | 'put' | 'patch' | 'delete' | 'options';
@@ -31,46 +33,32 @@ export type HttpMethodTypes = 'get' | 'post' | 'put' | 'patch' | 'delete' | 'opt
 export interface RequestConfig extends RequestInit {
   url: string;
   ttl?: number;
-  timeout?: number;
   forceRefresh?: boolean;
   responseType?: 'json' | 'text' | 'blob' | 'arrayBuffer' | 'formData';
   emptyStatusCodes?: number[];
-  validate?: {
-    request?: boolean;
-    response?: boolean;
-    onValidationError?: (error: ValidationError) => void;
-  };
   cacheKey?: string;
-  retries?: number;
-  retryDelay?: number;
-  retryOn?: (error: Error) => boolean;
-  schemas?: {
-    query?: TAnySchema;
-    params?: TAnySchema;
-    body?: TAnySchema;
-    response?: TAnySchema;
-  };
 }
 
 export type InferQuery<T> = T extends { queryModel: TObject } 
   ? Static<T['queryModel']> 
-  : Record<string, never>;
+  : never;
 
 export type InferParams<T> = T extends { paramsModel: TObject } 
   ? Static<T['paramsModel']> 
-  : Record<string, never>;
+  : never;
 
-export type InferBody<T> = T extends { bodyModel: infer TB extends TAnySchema } 
+export type InferBody<T> = T extends { bodyModel: infer TB extends TSchema } 
   ? Static<TB> 
   : never;
 
-export type InferResponse<T> = T extends { responseModel: infer TR extends TAnySchema } 
+export type InferResponse<T> = T extends { responseModel: infer TR extends TSchema } 
   ? Static<TR> 
   : unknown;
 
-export interface ReactiveStore<TData, TError> {
-  state: ReadonlySignal<FetchState<TData, TError>>;
-  refetch: () => Promise<void>;
+export interface ReactiveStore<TData, TError, TConfig extends RequestConfigData> {
+  $state: ReadonlySignal<FetchState<TData, TError>>;
+  request: (requestParams: RequestParams<TConfig>) => Promise<void>;
+  refetch?: () => Promise<void>;
   cancel: () => void;
   destroy: () => void;
 }
@@ -90,16 +78,23 @@ export interface CacheEntry<TData = unknown> {
   ttlTimestamp: number;
 }
 
-export type RepositoryRequestConfig<T extends RequestConfigData> = {
-  query?: InferQuery<T>;
-  urlParams?: InferParams<T>;
-  body?: InferBody<T>;
+export type RepositoryRequestConfig = {
+  config?: Omit<RequestConfig, 'url' | 'method' | 'body'>;
+};
+
+export type RequestParams<T extends RequestConfigData> = (
+  T['queryModel'] extends TObject ? { query: InferQuery<T> } : {query?: never;}
+) & (
+  T['paramsModel'] extends TObject ? { urlParams: InferParams<T> } : {urlParams?: never;}
+) & (
+  T['bodyModel'] extends TSchema ? { body: InferBody<T> } : {body?: never;}
+) & {
   config?: Omit<RequestConfig, 'url' | 'method' | 'body'>;
 };
 
 export type RepositoryMethod<T extends RequestConfigData> = (
-  requestConfig: RepositoryRequestConfig<T>
-) => ReactiveStore<InferResponse<T>, Error>;
+  requestConfig: RepositoryRequestConfig
+) => ReactiveStore<InferResponse<T>, Error, T>;
 
 export type CreatorRepository<T extends readonly RequestConfigData[]> = {
   [K in T[number]['name']]: RepositoryMethod<Extract<T[number], { name: K }>>;

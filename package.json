@@ -26,7 +26,7 @@
     "check:types": "tsc --noEmit",
     "test": "bun test",
     "pub": "bun run build && npm publish --access public",
-    "build:lib": "bun build ./src/index.ts --outdir ./dist --target browser --format esm --minify --external @sinclair/typebox --external @preact/signals --external @front-utils/utils",
+    "build:lib": "bun build ./src/index.ts --outdir ./dist --target browser --format esm --minify --external typebox --external @preact/signals --external @front-utils/utils",
     "build": "rm -rf dist && rm -rf types && bun run build:lib & tsc --p tsconfig.build.json"
   },
   "browserslist": [
@@ -80,7 +80,7 @@
   "dependencies": {
     "@front-utils/utils": "^0.3.0",
     "@preact/signals": "^2.3.2",
-    "@sinclair/typebox": "^0.34.41",
+    "typebox": "^1.x.x",
     "caniuse-lite": "^1.0.30001751"
   }
 }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 
-import { apiCache, CacheStore } from '../src/cache.js';
+import { cacheStore, CacheStore } from '../src/store.js';
 
 describe('CacheStore', () => {
     let store;
@@ -143,8 +143,8 @@ describe('CacheStore', () => {
     });
 });
 
-describe('apiCache', () => {
+describe('cacheStore', () => {
     it('should be instance of CacheStore', () => {
-        expect(apiCache).toBeInstanceOf(CacheStore);
+        expect(cacheStore).toBeInstanceOf(CacheStore);
     });
 });

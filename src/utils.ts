@@ -1,5 +1,6 @@
-import { TSchema } from '@sinclair/typebox';
-import { Value } from '@sinclair/typebox/value';
+import { encodeQueryParams } from '@front-utils/utils';
+import { TSchema } from 'typebox';
+import { Value } from 'typebox/value';
 
 import { ParsingError, ValidationError } from './errors';
 import { RequestConfig } from './types';
@@ -111,4 +112,29 @@ export function buildUrlWithParams(path: string, urlParams: Record<string, unkno
         url = replaceParam(url, key, value);
     }
     return url;
+}
+
+export function appendQueryParams(url: string, query: Record<string, unknown>): string {
+    const queryParams = encodeQueryParams(query);
+    const queryString = queryParams?.toString?.();
+
+    if(!queryString) return url;
+
+    const urlParts = url.split('?');
+
+    return urlParts.length > 1 ? `${urlParts[0]}?${urlParts[1]}&${queryString}` : `${url}?${queryString}`;
+}
+
+export function isEmptyStatus(
+    status: number,
+    configEmptyCodes?: number[]
+): boolean {
+    const defaultCodes = [204, 205];
+    const combinedCodes = configEmptyCodes ? [...defaultCodes, ...configEmptyCodes] : defaultCodes;
+
+    return combinedCodes.includes(status);
+}
+
+export function buildRequestUrl(url: string, baseURL: string): string {
+    return new URL(url, baseURL).toString();
 }

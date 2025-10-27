@@ -1,5 +1,29 @@
+import { TSchema } from "typebox/type";
+
 import { CacheEntry, RequestConfig } from './types';
 import { isGetMethod } from './utils';
+
+class CompiledSchemaStore {
+
+    private schemas = new WeakMap<TSchema, TSchema>();
+
+    public get(value: TSchema) {
+        if(this.schemas.has(value)) {
+            return this.schemas.get(value);
+        }
+        return null;
+    }
+    public set(key: TSchema, value: TSchema) {
+        this.schemas.set(key, value);
+    }
+    
+    public delete(value: TSchema) {
+        if(this.schemas.has(value)) {
+            return this.schemas.delete(value);
+        }
+    }
+
+}
 
 function generateCacheKey(config: RequestConfig): string {
     return config.cacheKey || `${config.method || 'GET'}:${config.url}`;
@@ -59,4 +83,5 @@ export class CacheStore {
 
 }
 
-export const apiCache = new CacheStore();
+export const cacheStore = new CacheStore();
+export const compiledSchemaStore = new CompiledSchemaStore();

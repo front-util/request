@@ -1,4 +1,4 @@
-import { TSchema } from '@sinclair/typebox';
+import { TSchema } from 'typebox';
 
 export class NetworkError extends Error {
 

@@ -145,7 +145,7 @@ const store = apiClient.createRequest<User>({
 
 ```typescript
 import { createRepository } from '@front-utils/request';
-import { Type } from '@sinclair/typebox';
+import Type from 'typebox';
 
 // Определяем схемы для API
 const requestConfigs = [
@@ -182,12 +182,28 @@ const requestConfigs = [
 const userRepository = createRepository(requestConfigs, apiClient);
 
 // Используем типизированные методы
-const userStore = userRepository.getUser({
+const userStore = userRepository.getUser({});
+
+// Выполняем запрос с параметрами
+await userStore.request({
   urlParams: { id: 123 },
   query: { fields: 'id,name,email' }
 });
 
-const newUserStore = userRepository.createUser({
+// Доступ к реактивным данным
+effect(() => {
+  if (userStore.state.value.type === 'success') {
+    console.log('User:', userStore.state.value.data);
+  }
+});
+
+// Повторный запрос
+await userStore.refetch();
+
+// Создание пользователя
+const newUserStore = userRepository.createUser({});
+
+await newUserStore.request({
   body: { name: 'John Doe', email: 'john@example.com' }
 });
 ```
