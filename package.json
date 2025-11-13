@@ -1,6 +1,6 @@
 {
   "name": "@front-utils/request",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "native fetch request",
   "author": "IVGolubev",
   "license": "ISC",
@@ -11,11 +11,12 @@
   },
   "types": "./types/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./types/*": "./types/*.d.ts",
-    "./types": "./types/index.d.ts",
-    "./packages": "./src/index.ts",
-    "./types/index.d.ts": "./types/index.d.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "default": "./dist/index.js",
+      "types": "./types/index.d.ts"
+    },
+    "./packages": "./src/index.ts"
   },
   "imports": {
     "#src/*": "./src/*",
