@@ -98,3 +98,11 @@ export type RepositoryMethod<T extends RequestConfigData> = (
 export type CreatorRepository<T extends readonly RequestConfigData[]> = {
   [K in T[number]['name']]: RepositoryMethod<Extract<T[number], { name: K }>>;
 };
+
+export type StoresForKeys<
+    Configs extends readonly RequestConfigData[],
+    Repo extends CreatorRepository<Configs>,
+    Keys extends readonly (keyof Repo)[]
+> = { 
+    [K in Keys[number]]: ReturnType<Repo[K]> 
+};

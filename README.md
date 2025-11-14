@@ -343,6 +343,26 @@ effect(() => {
 
 **Возвращает:** репозиторий методов типа CreatorRepository<TConfigs>
 
+### `createStoresForKeys<Configs, Repo, Keys, CustomStore>(repository, configs, createCustomStore)`
+
+Создает несколько хранилищ (stores) для заданных ключей из репозитория с возможностью добавления кастомного хранилища.
+
+**Параметры:**
+- `repository` - репозиторий с фабричными функциями для создания хранилищ
+- `configs` - массив ключей или объектов с именем и конфигурацией
+- `createCustomStore` - функция для создания кастомного хранилища на основе созданных stores
+
+**Возвращает:** объект, содержащий все созданные stores, кастомное хранилище и метод `destroyAll` для очистки ресурсов
+
+### `createStoreWithRepo<Configs, Repo>(repository)`
+
+Функция высшего порядка, возвращающая функцию для создания хранилищ с использованием заданного репозитория.
+
+**Параметры:**
+- `repository` - репозиторий с фабричными функциями
+
+**Возвращает:** функцию, принимающую configs и createCustomStore, которая создает хранилища аналогично `createStoresForKeys`
+
 ## 🎨 Примеры использования
 
 ### Загрузка списка постов с пагинацией
@@ -425,6 +445,95 @@ function CreatePost() {
       <button onClick={handleSubmit}>
         Создать пост
       </button>
+    </div>
+  );
+}
+```
+
+### Создание нескольких хранилищ с кастомным объединением
+
+```typescript
+import { createApiClient, createRepository, createStoresForKeys } from '@front-utils/request';
+import Type from 'typebox';
+
+const endpoints = [
+  {
+    name: 'getUser',
+    method: 'get' as const,
+    path: '/users/:id',
+    paramsModel: Type.Object({ id: Type.Number() }),
+    responseModel: Type.Object({
+      id: Type.Number(),
+      name: Type.String(),
+      email: Type.String()
+    })
+  },
+  {
+    name: 'getPosts',
+    method: 'get' as const,
+    path: '/posts',
+    queryModel: Type.Object({
+      userId: Type.Optional(Type.Number())
+    }),
+    responseModel: Type.Array(Type.Object({
+      id: Type.Number(),
+      title: Type.String(),
+      body: Type.String(),
+      userId: Type.Number()
+    }))
+  }
+] as const;
+
+function UserDashboard({ userId }: { userId: number }) {
+  const apiClient = createApiClient({ baseURL: 'https://jsonplaceholder.typicode.com' });
+  const repository = createRepository(endpoints, apiClient);
+
+  // Создаем несколько хранилищ с кастомным объединением
+  const dashboardStore = createStoresForKeys(
+    repository,
+    [
+      'getUser',
+      'getPosts'
+    ],
+    (stores) => ({
+      // Кастомное хранилище с объединенной логикой
+      loadUserData: async () => {
+        await stores.getUser.request({ urlParams: { id: userId } });
+        await stores.getPosts.request({ query: { userId } });
+      },
+      get user() {
+        return stores.getUser.state.value.type === 'success' ? stores.getUser.state.value.data : null;
+      },
+      get posts() {
+        return stores.getPosts.state.value.type === 'success' ? stores.getPosts.state.value.data : [];
+      },
+      get isLoading() {
+        return stores.getUser.state.value.type === 'loading' || stores.getPosts.state.value.type === 'loading';
+      }
+    })
+  );
+
+  React.useEffect(() => {
+    dashboardStore.loadUserData();
+  }, [userId]);
+
+  if (dashboardStore.isLoading) return <div>Загрузка...</div>;
+
+  return (
+    <div>
+      {dashboardStore.user && (
+        <div>
+          <h1>{dashboardStore.user.name}</h1>
+          <p>{dashboardStore.user.email}</p>
+        </div>
+      )}
+      <h2>Посты пользователя:</h2>
+      {dashboardStore.posts.map(post => (
+        <div key={post.id}>
+          <h3>{post.title}</h3>
+          <p>{post.body}</p>
+        </div>
+      ))}
     </div>
   );
 }
