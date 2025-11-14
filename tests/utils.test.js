@@ -8,8 +8,35 @@ import {
     isGetMethod,
     parseResponse,
     replaceParam,
-    validateSchema
+    validateSchema,
+    buildRequestUrl
 } from '../src/utils.js';
+
+describe('buildRequestUrl', () => {
+    it('1 - should return valid url', () => {
+        expect(buildRequestUrl('/somepath', 'https://test.ru')).toBe('https://test.ru/somepath');
+    });
+
+    it('2 - should return valid url', () => {
+        expect(buildRequestUrl('/somepath', 'https://test.ru/')).toBe('https://test.ru/somepath');
+    });
+
+    it('3 - should return valid url', () => {
+        expect(buildRequestUrl('somepath', 'https://test.ru/')).toBe('https://test.ru/somepath');
+    });
+
+    it('4 - should return valid url', () => {
+        expect(buildRequestUrl('/somepath', '')).toBe('/somepath');
+    });
+
+    it('5 - should return valid url', () => {
+        expect(buildRequestUrl('https://somepath', 'https://test.ru')).toBe('https://somepath');
+    });
+
+    it('6 - should return valid url', () => {
+        expect(buildRequestUrl('/somepath', 'https://test.ru/innerurl/url/')).toBe('https://test.ru/innerurl/url/somepath');
+    });
+});
 
 describe('isGetMethod', () => {
     it('should return true for GET method', () => {

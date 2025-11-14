@@ -13,6 +13,13 @@ interface ServiceContext {
   defaultHeaders?: Record<string, string>;
 }
 
+const initialStateConfig = {
+    type  : 'idle',
+    status: null,
+    data  : undefined,
+    error : undefined,
+} as const;
+
 export function createRequestStore<TData, TError, TConfig extends RequestConfigData>(
     initialConfig: RequestConfig,
     serviceContext: ServiceContext
@@ -22,12 +29,7 @@ export function createRequestStore<TData, TError, TConfig extends RequestConfigD
     };
     let activeRequestController: AbortController | null = null;
     let isRequestStoreDestroyed = false;
-    const stateSignal = signal<FetchState<TData, TError>>({
-        type  : 'idle',
-        status: null,
-        data  : undefined,
-        error : undefined,
-    });
+    const stateSignal = signal<FetchState<TData, TError>>(initialStateConfig);
     const isGetRequest = isGetMethod(requestConfig);
 
     const updateState = (newState: FetchState<TData, TError>) => {
@@ -195,8 +197,9 @@ export function createRequestStore<TData, TError, TConfig extends RequestConfigD
     };
 
     const destroy = () => {
-        isRequestStoreDestroyed = true;
         cancel();
+        updateState(initialStateConfig);
+        isRequestStoreDestroyed = true;
     };
 
     return {

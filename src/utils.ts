@@ -137,5 +137,9 @@ export function isEmptyStatus(
 
 export function buildRequestUrl(url: string, baseURL: string): string {
     if(!baseURL) return url;
-    return new URL(url, baseURL).toString();
+    if(url.startsWith('http')) return url;
+    const emptyUrl = new URL('', baseURL);
+    const pathname = `${emptyUrl.pathname}/${url}`.replaceAll(/\/{2,}/g, "/");
+
+    return new URL(pathname, emptyUrl).href;
 }
