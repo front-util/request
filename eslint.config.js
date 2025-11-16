@@ -3,7 +3,7 @@ import {defineConfig} from 'eslint/config';
 
 export default defineConfig([
     {
-        files          : ["./src/**/*.ts"],
+        files          : ["./src/**/*.ts", "./examples/*.ts"],
         languageOptions: {
             parserOptions: {
                 project: null,

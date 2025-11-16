@@ -26,6 +26,7 @@
   "include": [
     "./src/**/*",
     "./tests/**/*",
-    "eslint.config.js"
+    "eslint.config.js",
+    "./examples/index.ts"
   ]
 }

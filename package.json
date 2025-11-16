@@ -1,6 +1,6 @@
 {
   "name": "@front-utils/request",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "native fetch request with typebox schema",
   "author": "IVGolubev",
   "license": "ISC",
