@@ -16,7 +16,7 @@ export function createStoresForKeys<
 >(
     repository: Repo,
     configs: Keys | {name: Keys[number]; config: RepositoryRequestConfig}[],
-    createCustomStore: (store: StoresForKeys<Configs, Repo, Keys>) => CustomStore
+    createCustomStore: (store: StoresForKeys<Configs, Repo, Keys> & {destroyAll: VoidFunction;}) => CustomStore
 ){
     const stores = {} as StoresForKeys<Configs, Repo, Keys>;
 
@@ -31,8 +31,6 @@ export function createStoresForKeys<
         stores[name] = factory(config) as ReturnType<Repo[typeof name]>;
     }
 
-    const customStore = createCustomStore(stores);
-
     function destroyAll() {
         const storeItems: ReturnType<Repo[Keys[number]]>[] = Object.values(stores);
 
@@ -40,6 +38,11 @@ export function createStoresForKeys<
             store?.destroy?.();
         }
     }
+
+    const customStore = createCustomStore({
+        ...stores,
+        destroyAll,
+    });
 
     return {
         ...stores,
