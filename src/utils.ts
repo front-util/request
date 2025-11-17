@@ -143,3 +143,10 @@ export function buildRequestUrl(url: string, baseURL: string): string {
 
     return new URL(pathname, emptyUrl).href;
 }
+
+export function checkIsJSON(headers: Record<string, string>, body: unknown) {
+    const headersFinal = new Headers(headers);
+    const isJSONByHeader = headersFinal.get('content-type')?.includes("application/json");
+
+    return isJSONByHeader && (typeof body === 'object' || Array.isArray(body));
+}

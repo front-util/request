@@ -27,3 +27,20 @@ export class InterceptorManager {
     }
 
 }
+
+const jsonTypeRequestNames = ['POST', 'PUT', 'PATCH', 'DELETE'];
+const jsonTypeRequestMap = new Set([...jsonTypeRequestNames, ...jsonTypeRequestNames.map((r) => r.toLowerCase())]);
+
+export const JSONTypeInterceptor = (requestConfig: RequestConfig & {url: string}) => {
+    const {headers, method = '',} = requestConfig;
+
+    // @ts-ignore
+    if((headers && !headers?.['Content-Type']) && jsonTypeRequestMap.has(method)) {
+        requestConfig.headers = {
+            ...headers,
+            ['Content-Type']: 'application/json;charset=utf-8',
+        };
+    }
+
+    return requestConfig;
+};

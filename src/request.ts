@@ -4,7 +4,7 @@ import { CancellationError, HttpError, ParsingError } from './errors';
 import { InterceptorManager } from './interceptors';
 import { cacheStore } from './store';
 import { FetchState, ReactiveStore, RequestConfig, RequestConfigData, RequestParams } from './types';
-import { appendQueryParams, buildRequestUrl, buildUrlWithParams, isEmptyStatus, isGetMethod, parseResponse } from './utils';
+import { appendQueryParams, buildRequestUrl, buildUrlWithParams, checkIsJSON, isEmptyStatus, isGetMethod, parseResponse } from './utils';
 
 interface ServiceContext {
   baseURL: string;
@@ -149,6 +149,14 @@ export function createRequestStore<TData, TError, TConfig extends RequestConfigD
                 ...serviceContext.defaultHeaders,
                 ...finalConfig.headers,
             };
+
+            if(finalConfig.body && checkIsJSON(headers, finalConfig.body)) {
+                try {
+                    finalConfig.body = JSON.stringify(finalConfig.body);
+                } catch(error) {
+                    console.error(error);
+                }
+            }
             const response = await fetch(finalUrl, {
                 ...finalConfig,
                 headers,
