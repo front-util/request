@@ -1,4 +1,4 @@
-import type { CreatorRepository, RepositoryRequestConfig, RequestConfigData, StoresForKeys } from './types';
+import type { CreatorRepository, RepositoryRequestConfig, RequestConfigData, StoresCustomStoreParams, StoresForKeys } from './types';
 
 function getConfig<T extends readonly RequestConfigData[], Repo extends CreatorRepository<T>, Key extends keyof Repo = keyof Repo>(c: Key | {name: Key; config: RepositoryRequestConfig}) {
     const isConfig = typeof c === 'object' && c !== null && 'name' in c;
@@ -16,7 +16,7 @@ export function createStoresForKeys<
 >(
     repository: Repo,
     configs: Keys | {name: Keys[number]; config: RepositoryRequestConfig}[],
-    createCustomStore: (store: StoresForKeys<Configs, Repo, Keys> & {destroyAll: VoidFunction;}) => CustomStore
+    createCustomStore: (store: StoresCustomStoreParams<Configs, Repo, Keys>) => CustomStore
 ){
     const stores = {} as StoresForKeys<Configs, Repo, Keys>;
 
@@ -57,7 +57,7 @@ export function createStoreWithRepo<
 >(repository: Repo) {
     return function<Keys extends readonly (keyof Repo)[], CustomStore extends object,>( 
         configs: Keys | {name: Keys[number]; config: RepositoryRequestConfig}[],
-        createCustomStore: (store: StoresForKeys<Configs, Repo, Keys>) => CustomStore
+        createCustomStore: (store: StoresCustomStoreParams<Configs, Repo, Keys>) => CustomStore
     ) {
         return createStoresForKeys(repository, configs, createCustomStore);
     };

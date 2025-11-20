@@ -35,7 +35,7 @@ export const JSONTypeInterceptor = (requestConfig: RequestConfig & {url: string}
     const {headers, method = '',} = requestConfig;
 
     // @ts-ignore
-    if((headers && !headers?.['Content-Type']) && jsonTypeRequestMap.has(method)) {
+    if((!headers?.['Content-Type']) && jsonTypeRequestMap.has(method)) {
         requestConfig.headers = {
             ...headers,
             ['Content-Type']: 'application/json;charset=utf-8',

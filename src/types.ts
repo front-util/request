@@ -106,3 +106,9 @@ export type StoresForKeys<
 > = { 
     [K in Keys[number]]: ReturnType<Repo[K]> 
 };
+
+export type StoresCustomStoreParams<
+    Configs extends readonly RequestConfigData[],
+    Repo extends CreatorRepository<Configs>,
+    Keys extends readonly (keyof Repo)[]
+> = StoresForKeys<Configs, Repo, Keys> & {destroyAll: VoidFunction;}
