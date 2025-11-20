@@ -28,15 +28,8 @@ export function createRequestStore<TData, TError, TConfig extends RequestConfigD
         ...initialConfig,
     };
     let activeRequestController: AbortController | null = null;
-    let isRequestStoreDestroyed = false;
     const stateSignal = signal<FetchState<TData, TError>>(initialStateConfig);
     const isGetRequest = isGetMethod(requestConfig);
-
-    const updateState = (newState: FetchState<TData, TError>) => {
-        if(!isRequestStoreDestroyed) {
-            stateSignal.value = newState;
-        }
-    };
 
     async function handleResponse(
         response: Response,
@@ -117,12 +110,12 @@ export function createRequestStore<TData, TError, TConfig extends RequestConfigD
             const cached = cacheStore.get<TData>(config);
 
             if(cached) {
-                updateState({
+                stateSignal.value = {
                     type  : 'success',
                     status: cached.status,
                     data  : cached.data,
                     error : undefined,
-                });
+                };
                 return true;
             }
         }
@@ -135,12 +128,12 @@ export function createRequestStore<TData, TError, TConfig extends RequestConfigD
         }
         activeRequestController = new AbortController();
 
-        updateState({
+        stateSignal.value = {
             type  : 'loading',
             status: null,
             data  : stateSignal.value.type === 'success' ? stateSignal.value.data : undefined,
             error : undefined,
-        });
+        };
 
         try {
             const finalConfig = await serviceContext.requestInterceptorsManager.applyInterceptors(config);
@@ -164,28 +157,28 @@ export function createRequestStore<TData, TError, TConfig extends RequestConfigD
             });
 
             if(activeRequestController?.signal.aborted) {
-                updateState({
+                stateSignal.value = {
                     type  : 'error',
                     status: null,
                     data  : undefined,
                     error : new CancellationError(),
-                });
+                };
                 return;
             }
             const resultState = await handleResponse(response, finalConfig, finalUrl);
 
-            updateState(resultState);
+            stateSignal.value = resultState;
         } catch(error) {
             const finalErr = (error instanceof DOMException && error.name === 'AbortError') ? 
                 new CancellationError() : 
                 error as Error;
 
-            updateState({
+            stateSignal.value = {
                 type  : 'error',
                 status: null,
                 data  : undefined,
                 error : finalErr,
-            });
+            };
         }
     };
 
@@ -206,8 +199,7 @@ export function createRequestStore<TData, TError, TConfig extends RequestConfigD
 
     const destroy = () => {
         cancel();
-        updateState(initialStateConfig);
-        isRequestStoreDestroyed = true;
+        stateSignal.value = initialStateConfig;
     };
 
     return {
