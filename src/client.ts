@@ -9,7 +9,8 @@ import {
     RequestConfig,
     RequestConfigData,
     RequestInterceptor,
-    ServiceConfig
+    ServiceConfig,
+    ServiceContext
 } from './types';
 
 export function createApiClient(serviceConfig: Partial<ServiceConfig> = {}) {
@@ -23,13 +24,20 @@ export function createApiClient(serviceConfig: Partial<ServiceConfig> = {}) {
     const serviceContext = {
         baseURL,
         requestInterceptorsManager,
-        strictValidation: serviceConfig.strictValidation ?? false,
-        defaultHeaders  : serviceConfig.defaultHeaders ?? {},
-    };
+        defaultHeaders: serviceConfig.defaultHeaders ?? {},
+        validationType: serviceConfig.validationType ?? 'disabled',
+    } satisfies ServiceContext;
 
     return {
-        createRequest: <TConfig extends RequestConfigData>(_: TConfig, initialConfig: RequestConfig): ReactiveStore<InferResponse<TConfig>, Error, TConfig> => createRequestStore<InferResponse<TConfig>, Error, TConfig>(initialConfig, serviceContext),
-        interceptors : {
+        createRequest: <TConfig extends RequestConfigData>(
+            initialConfig: TConfig, 
+            finalRequestConfig: RequestConfig
+        ): ReactiveStore<InferResponse<TConfig>, Error, TConfig> => createRequestStore<InferResponse<TConfig>, Error, TConfig>(
+            finalRequestConfig, 
+            serviceContext, 
+            initialConfig
+        ),
+        interceptors: {
             request: {
                 use  : (interceptor: RequestInterceptor) => requestInterceptorsManager.use(interceptor),
                 eject: (id: number) => requestInterceptorsManager.eject(id),

@@ -1,37 +1,10 @@
 import { encodeQueryParams } from '@front-utils/utils';
-import { TSchema } from 'typebox';
-import { Value } from 'typebox/value';
 
-import { ParsingError, ValidationError } from './errors';
+import { ParsingError } from './errors';
 import { RequestConfig } from './types';
 
 export function isGetMethod(config: { method?: string | null }): boolean {
     return (config.method || 'GET').toUpperCase() === 'GET';
-}
-
-export function validateSchema(
-    schema: TSchema,
-    data: unknown,
-    context: string
-): ValidationError | null {
-    if(!schema) return null;
-
-    try {
-        const isValid = Value.Check(schema, data);
-
-        if(isValid) return null;
-
-        const errors = [...Value.Errors(schema, data)];
-
-        return new ValidationError(`Invalid ${context} data`, schema, data, errors);
-    } catch(error) {
-        return new ValidationError(
-            `Validation failed for ${context}`,
-            schema,
-            data,
-            error instanceof Error ? error.message : String(error)
-        );
-    }
 }
 
 export function inferResponseType(

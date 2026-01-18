@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { Type } from 'typebox';
 
-import { cacheStore, CacheStore } from '../src/store.js';
+import { cacheStore, CacheStore, validatorsStore } from '../src/store.js';
 
 describe('CacheStore', () => {
     let store;
@@ -146,5 +147,79 @@ describe('CacheStore', () => {
 describe('cacheStore', () => {
     it('should be instance of CacheStore', () => {
         expect(cacheStore).toBeInstanceOf(CacheStore);
+    });
+});
+
+describe('CacheStore Performance', () => {
+    let store;
+
+    beforeEach(() => {
+        store = new CacheStore();
+    });
+
+    it('should handle rapid set/get operations', () => {
+        const startTime = performance.now();
+        
+        // Perform many rapid operations
+        for (let i = 0; i < 1000; i++) {
+            const config = { url: `/test${i}`, };
+            store.set(config, { data: i }, 200, 10000);
+            const result = store.get(config);
+            expect(result.data.data).toBe(i);
+        }
+        
+        const endTime = performance.now();
+        console.log(`Rapid cache operations took ${endTime - startTime}ms`);
+        
+        // Should complete quickly (e.g., less than 100ms)
+        expect(endTime - startTime).toBeLessThan(100);
+    });
+
+    it('should maintain performance with large cache', () => {
+        // Pre-populate with many items
+        for (let i = 0; i < 5000; i++) {
+            store.set({ url: `/item${i}` }, { id: i }, 200, 60000);
+        }
+        
+        const startTime = performance.now();
+        
+        // Test operations on large cache
+        for (let i = 4500; i < 5000; i++) {
+            const result = store.get({ url: `/item${i}` });
+            expect(result).not.toBeNull();
+            expect(result.data.id).toBe(i);
+        }
+        
+        const endTime = performance.now();
+        console.log(`Large cache operations took ${endTime - startTime}ms`);
+        
+        // Should still be fast (e.g., less than 50ms)
+        expect(endTime - startTime).toBeLessThan(50);
+    });
+});
+
+describe('ValidatorsStore Performance', () => {
+    it('should handle validation performance', () => {
+        const schema = Type.Object({
+            id: Type.Number(),
+            name: Type.String()
+        });
+
+        const data = { id: 1, name: 'test' };
+
+        const startTime = performance.now();
+        
+        // Perform many validations
+        for (let i = 0; i < 100; i++) {
+            const validator = validatorsStore.get(schema);
+            const errors = validator.Errors(data);
+            [...errors]; // Consume errors
+        }
+        
+        const endTime = performance.now();
+        console.log(`Validation operations took ${endTime - startTime}ms`);
+        
+        // Should be fast (e.g., less than 50ms)
+        expect(endTime - startTime).toBeLessThan(50);
     });
 });

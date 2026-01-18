@@ -1,17 +1,9 @@
 import { signal } from '@preact/signals';
 
 import { CancellationError, HttpError, ParsingError } from './errors';
-import { InterceptorManager } from './interceptors';
-import { cacheStore } from './store';
-import { FetchState, ReactiveStore, RequestConfig, RequestConfigData, RequestParams } from './types';
+import { cacheStore, validatorsStore } from './store';
+import { FetchState, ReactiveStore, RequestConfig, RequestConfigData, RequestParams, ServiceContext } from './types';
 import { appendQueryParams, buildRequestUrl, buildUrlWithParams, checkIsJSON, isEmptyStatus, isGetMethod, parseResponse } from './utils';
-
-interface ServiceContext {
-  baseURL: string;
-  requestInterceptorsManager: InterceptorManager;
-  strictValidation?: boolean;
-  defaultHeaders?: Record<string, string>;
-}
 
 const initialStateConfig = {
     type  : 'idle',
@@ -21,15 +13,20 @@ const initialStateConfig = {
 } as const;
 
 export function createRequestStore<TData, TError, TConfig extends RequestConfigData>(
-    initialConfig: RequestConfig,
-    serviceContext: ServiceContext
+    finalRequestConfig: RequestConfig,
+    serviceContext: ServiceContext,
+    {
+        validationType,
+        bodyModel,
+    }: TConfig
 ): ReactiveStore<TData, TError, TConfig> {
     const requestConfig = {
-        ...initialConfig,
+        ...finalRequestConfig,
     };
     let activeRequestController: AbortController | null = null;
     const stateSignal = signal<FetchState<TData, TError>>(initialStateConfig);
     const isGetRequest = isGetMethod(requestConfig);
+    const instanceValidationType = validationType ?? serviceContext.validationType ?? 'disabled';
 
     async function handleResponse(
         response: Response,
@@ -46,6 +43,7 @@ export function createRequestStore<TData, TError, TConfig extends RequestConfigD
             } catch(error) {
                 throw new ParsingError('Failed to parse successful response body', error);
             }
+            const validationError = validatorsStore.validate(instanceValidationType, bodyModel, resultData);
 
             if(isEmptyStatus(status, requestConfig.emptyStatusCodes || [])) {
                 cacheStore.invalidate(finalConfig);
@@ -63,7 +61,7 @@ export function createRequestStore<TData, TError, TConfig extends RequestConfigD
                 type : 'success',
                 status,
                 data : resultData as TData,
-                error: undefined,
+                error: validationError,
             };
         } else {
             let errorBody: TError | undefined;

@@ -250,8 +250,220 @@ await createUserStore.request({
 
 
 
+
 ## 🔧 Расширенная конфигурация
 
+### Валидация данных
+
+Библиотека поддерживает валидацию данных с помощью TypeBox:
+
+```typescript
+import { createApiClient, createRepository } from '@front-utils/request';
+import Type from 'typebox';
+
+const endpoints = [
+  {
+    name: 'getUser',
+    method: 'get' as const,
+    path: '/users/:id',
+    paramsModel: Type.Object({ id: Type.Number() }),
+    responseModel: Type.Object({
+      id: Type.Number(),
+      name: Type.String({ minLength: 1 }),
+      email: Type.String({ format: 'email' })
+    })
+  }
+] as const;
+
+// Включаем валидацию на уровне клиента
+const apiClient = createApiClient({
+  baseURL: 'https://api.example.com',
+  validationType: 'bodySoft' // Включает мягкую валидацию
+});
+
+const userRepo = createRepository(endpoints, apiClient);
+const userStore = userRepo.getUser({});
+
+await userStore.request({ urlParams: { id: 123 } });
+
+// При валидации с ошибками данные будут доступны, но в error будет ValidationError
+if (userStore.$state.value.type === 'success' && userStore.$state.value.error) {
+  console.log('Validation errors:', userStore.$state.value.error);
+}
+```
+
+Типы валидации:
+- `disabled` - валидация отключена (по умолчанию)
+- `bodySoft` - возвращает данные даже при ошибках валидации, ошибки доступны в поле error
+
+### Расширенное кэширование
+
+Библиотека поддерживает инвалидацию кэша по паттернам:
+
+```typescript
+import { createApiClient } from '@front-utils/request';
+
+const apiClient = createApiClient({
+  baseURL: 'https://api.example.com'
+});
+
+// Инвалидация кэша по паттерну
+apiClient.invalidateCacheByPattern(/^GET:\/users\//); // Инвалидирует все запросы /users/*
+
+// Инвалидация всего кэша
+apiClient.clearCache();
+```
+
+При создании запросов можно указать TTL для кэширования:
+
+```typescript
+const userStore = apiClient.createRequest<User>({
+  url: '/users/1',
+  method: 'GET'
+}, {
+  ttl: 5 * 60 * 1000 // Кэширование на 5 минут
+});
+```
+
+### Расширенные интерсепторы
+
+Библиотека поддерживает асинхронные интерсепторы:
+
+```typescript
+import { createApiClient } from '@front-utils/request';
+
+// Асинхронный интерсептор для добавления токена авторизации
+const authInterceptor = async (config) => {
+  const token = await getAuthToken(); // Асинхронная операция
+  
+  return {
+    ...config,
+    headers: {
+      ...config.headers,
+      'Authorization': `Bearer ${token}`
+    }
+  };
+};
+
+const apiClient = createApiClient({
+  baseURL: 'https://api.example.com',
+  requestInterceptors: [authInterceptor]
+});
+
+// Также можно добавлять интерсепторы после создания клиента
+apiClient.interceptors.request.use(authInterceptor);
+```
+
+### Упрощенное создание хранилищ
+
+Функции `createStoresForKeys` и `createStoreWithRepo` позволяют создавать несколько хранилищ одновременно:
+
+```typescript
+import { createApiClient, createRepository, createStoresForKeys } from '@front-utils/request';
+import Type from 'typebox';
+
+const endpoints = [
+  {
+    name: 'getUser',
+    method: 'get' as const,
+    path: '/users/:id',
+    paramsModel: Type.Object({ id: Type.Number() }),
+    responseModel: Type.Object({
+      id: Type.Number(),
+      name: Type.String(),
+      email: Type.String()
+    })
+  },
+  {
+    name: 'getPosts',
+    method: 'get' as const,
+    path: '/posts',
+    queryModel: Type.Object({
+      userId: Type.Optional(Type.Number())
+    }),
+    responseModel: Type.Array(Type.Object({
+      id: Type.Number(),
+      title: Type.String(),
+      body: Type.String()
+    }))
+  }
+] as const;
+
+const apiClient = createApiClient({ baseURL: 'https://jsonplaceholder.typicode.com' });
+const repository = createRepository(endpoints, apiClient);
+
+// Создание нескольких хранилищ с кастомной логикой
+const dashboardStores = createStoresForKeys(
+  repository,
+  [
+    'getUser',
+    'getPosts'
+  ],
+  (stores) => ({
+    // Кастомное хранилище с объединенной логикой
+    loadUserData: async (userId: number) => {
+      await stores.getUser.request({ urlParams: { id: userId } });
+      await stores.getPosts.request({ query: { userId } });
+    },
+    get user() {
+      return stores.getUser.$state.value.type === 'success' ? stores.getUser.$state.value.data : null;
+    },
+    get posts() {
+      return stores.getPosts.$state.value.type === 'success' ? stores.getPosts.$state.value.data : [];
+    },
+    get isLoading() {
+      return stores.getUser.$state.value.type === 'loading' || stores.getPosts.$state.value.type === 'loading';
+    }
+  })
+);
+
+// Использование функции высшего порядка
+const createStore = createStoreWithRepo(repository);
+const userStores = createStore(
+  [
+    { name: 'getUser', config: { config: { ttl: 5 * 60 * 1000 } } }, // Кэширование на 5 минут
+    'getPosts'
+  ],
+  (stores) => ({
+    refreshAll: async () => {
+      await Promise.all([
+        stores.getUser.request({ urlParams: { id: 1 }, config: { forceRefresh: true } }),
+        stores.getPosts.request({ config: { forceRefresh: true } })
+      ]);
+    }
+  })
+);
+```
+
+## 🚀 Производительность
+
+Библиотека оптимизирована для высокой производительности:
+
+### Кэширование валидаторов
+Валидация с помощью TypeBox кэшируется для повторного использования, что значительно ускоряет последующие операции валидации.
+
+### Эффективное кэширование запросов
+Встроенный механизм кэширования позволяет избежать повторных сетевых запросов и ускорить отображение данных.
+
+### Минимизация перерисовок
+Использование сигналов Preact позволяет минимизировать количество перерисовок компонентов, отслеживая только действительно изменившиеся данные.
+
+### Быстрая обработка ошибок
+Система обработки ошибок оптимизирована для быстрого реагирования и минимального влияния на пользовательский интерфейс.
+
+### Тесты производительности
+Библиотека включает расширенные тесты производительности для всех ключевых компонентов:
+
+```bash
+# Запуск тестов производительности
+npm run test:perf
+```
+
+Тесты охватывают:
+- Валидацию больших схем
+- Обработку большого количества запросов
+- Кэширование данных
+- Работу с интерсепторами
 ### Кастомные интерсепторы
 
 ```typescript
@@ -308,12 +520,15 @@ effect(() => {
 **Параметры:**
 - `config.baseURL` - базовый URL для всех запросов
 - `config.requestInterceptors` - массив интерсепторов
+- `config.validationType` - тип валидации ('disabled' | 'bodySoft')
+- `config.defaultHeaders` - заголовки по умолчанию для всех запросов
 
 **Возвращает:** API клиент с методами:
 - `createRequest<T>(config)` - создает реактивный запрос
 - `interceptors.request.use(interceptor)` - добавляет интерсептор
 - `invalidateCache(key)` - инвалидирует кэш по ключу
 - `clearCache()` - очищает весь кэш
+- `invalidateCacheByPattern(pattern)` - инвалидирует кэш по паттерну
 
 ### `createRequest<TConfig extends RequestConfigData>(config?, initialConfig)`
 
@@ -362,6 +577,25 @@ effect(() => {
 - `repository` - репозиторий с фабричными функциями
 
 **Возвращает:** функцию, принимающую configs и createCustomStore, которая создает хранилища аналогично `createStoresForKeys`
+
+### `cacheStore.invalidateByPattern(pattern)`
+
+Инвалидирует кэш по регулярному выражению.
+
+**Параметры:**
+- `pattern` - регулярное выражение для поиска ключей кэша
+
+### `validatorsStore`
+
+Хранилище валидаторов с методами для работы с валидацией данных.
+
+**Свойства:**
+- `validationErrors` - массив последних ошибок валидации (до 3 элементов)
+
+**Методы:**
+- `validate(validationType, schema, data)` - выполняет валидацию данных
+- `get(schema)` - получает валидатор для схемы (с кэшированием)
+- `clear()` - очищает кэш валидаторов и ошибки
 
 ## 🎨 Примеры использования
 

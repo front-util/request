@@ -4,6 +4,8 @@
 .vscode/launch.json
 .version
 .nx
+.codeassistant
+.codeassistantmodes
 
 .gitignore
 .lintstagedrc.json

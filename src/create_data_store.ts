@@ -42,12 +42,14 @@ export function createStoresForKeys<
     const customStore = createCustomStore({
         ...stores,
         destroyAll,
+        
     });
 
     return {
         ...stores,
         ...customStore,
         destroyAll,
+        
     } as const;
 }
 

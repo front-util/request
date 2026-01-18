@@ -1,26 +1,90 @@
+import { Compile, Validator } from "typebox/compile";
 import { TSchema } from "typebox/type";
 
-import { CacheEntry, RequestConfig } from './types';
+import { ValidationError } from "./errors";
+import { CacheEntry, RequestConfig, ValidationType } from './types';
 import { isGetMethod } from './utils';
 
-class CompiledSchemaStore {
+const MAX_ERRORS_LENGTH = 3;
 
-    private schemas = new WeakMap<TSchema, TSchema>();
+class ValidatorsStore {
 
-    public get(value: TSchema) {
-        if(this.schemas.has(value)) {
-            return this.schemas.get(value);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private validatorsMap = new WeakMap<TSchema, Validator<any, TSchema>>();
+
+    public validationErrors: ValidationError[] = [];
+
+    public pushError(validationError: ValidationError) {
+        if(this.validationErrors.length >= MAX_ERRORS_LENGTH) {
+            this.validationErrors.shift();
         }
-        return null;
+        this.validationErrors.push(validationError);
     }
-    public set(key: TSchema, value: TSchema) {
-        this.schemas.set(key, value);
+
+    public getErrors() {
+        return this.validationErrors;
+    }
+
+    public get(schema: TSchema) {
+        let validator = this.validatorsMap.get(schema);
+    
+        if(!validator) {
+            try {
+                validator = Compile(schema);
+                this.set(schema, validator);
+            } catch(error) {
+                console.error(error);
+            }
+        }
+        return validator;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public set(key: TSchema, value: Validator<any, TSchema>) {
+        this.validatorsMap.set(key, value);
     }
     
     public delete(value: TSchema) {
-        if(this.schemas.has(value)) {
-            return this.schemas.delete(value);
+        if(this.validatorsMap.has(value)) {
+            return this.validatorsMap.delete(value);
         }
+    }
+
+    public validate(
+        validationType: ValidationType = 'disabled',
+        schema?: TSchema,
+        data?: unknown
+    ): ValidationError | undefined {
+        if(validationType === 'disabled' || !schema || !data) {
+            return;
+        }
+        const validator = this.get(schema);
+    
+        if(!validator) return;
+    
+        try {
+            const errors = validator.Errors(data);
+    
+            if(!errors?.length) return;
+    
+            const validationError = new ValidationError(`Invalid data`, schema, data, errors);
+
+            this.pushError(validationError);
+            return validationError;
+        } catch(error) {
+            return new ValidationError(
+                `Validation failed for current data by schema`,
+                schema,
+                data,
+                error instanceof Error ? error.message : String(error)
+            );
+        }
+    }
+
+    public clear() {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.validatorsMap = new WeakMap<TSchema, Validator<any, TSchema>>();
+        this.validationErrors = [];
     }
 
 }
@@ -84,4 +148,9 @@ export class CacheStore {
 }
 
 export const cacheStore = new CacheStore();
-export const compiledSchemaStore = new CompiledSchemaStore();
+export const validatorsStore = new ValidatorsStore();
+
+export function clearCachedData() {
+    cacheStore.clear();
+    validatorsStore.clear();
+}

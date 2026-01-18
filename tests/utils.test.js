@@ -8,7 +8,6 @@ import {
     isGetMethod,
     parseResponse,
     replaceParam,
-    validateSchema,
     buildRequestUrl
 } from '../src/utils.js';
 
@@ -52,32 +51,6 @@ describe('isGetMethod', () => {
     it('should return false for non-GET methods', () => {
         expect(isGetMethod({ method: 'POST', })).toBe(false);
         expect(isGetMethod({ method: 'PUT', })).toBe(false);
-    });
-});
-
-describe('validateSchema', () => {
-    const schema = Type.Object({
-        name: Type.String(),
-        age : Type.Number(),
-    });
-
-    it('should return null for valid data', () => {
-        const result = validateSchema(schema, { name: 'John', age: 30, }, 'test');
-
-        expect(result).toBeNull();
-    });
-
-    it('should return ValidationError for invalid data', () => {
-        const result = validateSchema(schema, { name: 'John', age: '30', }, 'test');
-
-        expect(result).toBeInstanceOf(Error);
-        expect(result.message).toBe('Validation Error: Invalid test data');
-    });
-
-    it('should return null if no schema', () => {
-        const result = validateSchema(null, { name: 'John', }, 'test');
-
-        expect(result).toBeNull();
     });
 });
 

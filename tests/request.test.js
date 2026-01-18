@@ -18,10 +18,10 @@ describe('createRequestStore', () => {
         const serviceContext = {
             baseURL: 'https://api.example.com',
             requestInterceptorsManager: new InterceptorManager(),
-            strictValidation: false,
+            validationType: 'disabled',
             defaultHeaders: {},
         };
-        const store = createRequestStore({ url: '/test' }, serviceContext);
+        const store = createRequestStore({ url: '/test' }, serviceContext, { validationType: 'disabled' });
 
         expect(store.$state.value.type).toBe('idle');
         expect(store.$state.value.status).toBe(null);
@@ -44,10 +44,10 @@ describe('createRequestStore', () => {
         const serviceContext = {
             baseURL: 'https://api.example.com',
             requestInterceptorsManager: new InterceptorManager(),
-            strictValidation: false,
+            validationType: 'disabled',
             defaultHeaders: {},
         };
-        const store = createRequestStore({ url: '/test', method: 'GET' }, serviceContext);
+        const store = createRequestStore({ url: '/test', method: 'GET' }, serviceContext, { validationType: 'disabled' });
 
         await store.request({});
 
@@ -76,10 +76,10 @@ describe('createRequestStore', () => {
         const serviceContext = {
             baseURL: 'https://api.example.com',
             requestInterceptorsManager: new InterceptorManager(),
-            strictValidation: false,
+            validationType: 'disabled',
             defaultHeaders: {},
         };
-        const store = createRequestStore({ url: '/test', method: 'GET' }, serviceContext);
+        const store = createRequestStore({ url: '/test', method: 'GET' }, serviceContext, { validationType: 'disabled' });
 
         await store.request({});
 
@@ -95,10 +95,10 @@ describe('createRequestStore', () => {
         const serviceContext = {
             baseURL: 'https://api.example.com',
             requestInterceptorsManager: new InterceptorManager(),
-            strictValidation: false,
+            validationType: 'disabled',
             defaultHeaders: {},
         };
-        const store = createRequestStore({ url: '/test', method: 'GET' }, serviceContext);
+        const store = createRequestStore({ url: '/test', method: 'GET' }, serviceContext, { validationType: 'disabled' });
 
         await store.request({});
 
@@ -128,10 +128,10 @@ describe('createRequestStore', () => {
         const serviceContext = {
             baseURL: 'https://api.example.com',
             requestInterceptorsManager: new InterceptorManager(),
-            strictValidation: false,
+            validationType: 'disabled',
             defaultHeaders: {},
         };
-        const store = createRequestStore({ url: '/test', method: 'GET' }, serviceContext);
+        const store = createRequestStore({ url: '/test', method: 'GET' }, serviceContext, { validationType: 'disabled' });
 
         const requestPromise = store.request({});
 
@@ -166,10 +166,10 @@ describe('createRequestStore', () => {
         const serviceContext = {
             baseURL: 'https://api.example.com',
             requestInterceptorsManager: new InterceptorManager(),
-            strictValidation: false,
+            validationType: 'disabled',
             defaultHeaders: {},
         };
-        const store = createRequestStore({ url: '/users/:id', method: 'GET' }, serviceContext);
+        const store = createRequestStore({ url: '/users/:id', method: 'GET' }, serviceContext, { validationType: 'disabled' });
 
         await store.request({ urlParams: { id: 123 } });
 
@@ -196,10 +196,10 @@ describe('createRequestStore', () => {
         const serviceContext = {
             baseURL: 'https://api.example.com',
             requestInterceptorsManager: new InterceptorManager(),
-            strictValidation: false,
+            validationType: 'disabled',
             defaultHeaders: {},
         };
-        const store = createRequestStore({ url: '/search', method: 'GET' }, serviceContext);
+        const store = createRequestStore({ url: '/search', method: 'GET' }, serviceContext, { validationType: 'disabled' });
 
         await store.request({ query: { q: 'test', limit: 10 } });
 
@@ -226,10 +226,10 @@ describe('createRequestStore', () => {
         const serviceContext = {
             baseURL: 'https://api.example.com',
             requestInterceptorsManager: new InterceptorManager(),
-            strictValidation: false,
+            validationType: 'disabled',
             defaultHeaders: {},
         };
-        const store = createRequestStore({ url: '/users', method: 'POST' }, serviceContext);
+        const store = createRequestStore({ url: '/users', method: 'POST' }, serviceContext, { validationType: 'disabled' });
 
         await store.request({ body: { name: 'John' } });
 
