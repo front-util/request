@@ -9,8 +9,8 @@
 - 🎯 **Автоматическое кэширование** - встроенная система кэширования с TTL
 - 🔄 **Дедупликация запросов** - предотвращает дублирующиеся запросы
 - 🛡️ **Интерсепторы** - middleware для модификации запросов и ответов
-
 - 📝 **Репозиторий паттерн** - типизированные запросы с TypeBox схемами
+- ✅ **Валидация данных** - встроенная валидация с помощью TypeBox
 
 ## 📦 Установка
 
@@ -79,6 +79,7 @@ if (state.type === 'success') console.log('User:', state.data); // { id: number,
 import { createApiClient, createRepository } from '@front-utils/request';
 import { useSignals } from '@preact/signals-react';
 import Type from 'typebox';
+import { useMemo } from 'react';
 
 const endpoints = [
   {
@@ -94,22 +95,27 @@ const endpoints = [
   }
 ] as const;
 
+// Создаем клиент и репозиторий вне компонента для избежания повторных созданий
+const apiClient = createApiClient({ baseURL: 'https://api.example.com' });
+const userRepo = createRepository(endpoints, apiClient);
+
 function UserProfile({ userId }: { userId: number }) {
-  const apiClient = createApiClient({ baseURL: 'https://api.example.com' });
-  const userRepo = createRepository(endpoints, apiClient);
-  const userStore = userRepo.getUser({});
+  // Создаем хранилище с useMemo для избежания повторных созданий
+  const userStore = useMemo(() => userRepo.getUser({}), []);
+  
+  // Подписываемся на сигналы
+  const userState = useSignals(() => userStore.$state.value);
 
-  // Reactively update UI
-  const user = userStore.state.value.type === 'success' ? userStore.state.value.data : null;
-  const isLoading = userStore.state.value.type === 'loading';
-  const error = userStore.state.value.type === 'error' ? userStore.state.value.error : null;
+  const isLoading = userState.type === 'loading';
+  const error = userState.type === 'error' ? userState.error : null;
+  const user = userState.type === 'success' ? userState.data : null;
 
-  React.useEffect(() => {
+  useEffect(() => {
     userStore.request({ urlParams: { id: userId } });
-  }, [userId]);
+  }, [userId, userStore]);
 
   if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {(error as Error).message}</div>;
+  if (error) return <div>Error: {error.message}</div>;
   if (!user) return <div>Пользователь не найден</div>;
 
   return (
@@ -119,6 +125,7 @@ function UserProfile({ userId }: { userId: number }) {
     </div>
   );
 }
+```
 
 ## 🔧 Конфигурация
 
@@ -136,7 +143,11 @@ const apiClient = createApiClient({
         'Authorization': 'Bearer your-token'
       }
     })
-  ]
+  ],
+  validationType: 'bodySoft', // Включаем валидацию
+  defaultHeaders: {
+    'Content-Type': 'application/json'
+  }
 });
 ```
 
@@ -150,7 +161,11 @@ const endpoints = [
     name: 'getUser',
     method: 'get' as const,
     path: '/users/:id',
-    responseModel: Type.Object({ id: Type.Number(), name: Type.String(), email: Type.String() })
+    responseModel: Type.Object({ 
+      id: Type.Number(), 
+      name: Type.String(), 
+      email: Type.String() 
+    })
   }
 ] as const;
 
@@ -224,8 +239,8 @@ await getUserStore.request({
 
 // Доступ к реактивным данным
 useSignals(() => {
-  if (getUserStore.state.value.type === 'success') {
-    console.log('User:', getUserStore.state.value.data);
+  if (getUserStore.$state.value.type === 'success') {
+    console.log('User:', getUserStore.$state.value.data);
   }
 });
 
@@ -246,10 +261,6 @@ await createUserStore.request({
 - `config` - дополнительные опции запроса
 
 Типы автоматически выводятся из определенных моделей в конфигурации эндпоинтов. Если модель не определена, соответствующий параметр недоступен для передачи.
-
-
-
-
 
 ## 🔧 Расширенная конфигурация
 
@@ -312,6 +323,9 @@ apiClient.invalidateCacheByPattern(/^GET:\/users\//); // Инвалидируе�
 
 // Инвалидация всего кэша
 apiClient.clearCache();
+
+// Инвалидация конкретного ключа
+apiClient.invalidateCache('GET:/users/123');
 ```
 
 При создании запросов можно указать TTL для кэширования:
@@ -464,6 +478,7 @@ npm run test:perf
 - Обработку большого количества запросов
 - Кэширование данных
 - Работу с интерсепторами
+
 ### Кастомные интерсепторы
 
 ```typescript
@@ -492,8 +507,8 @@ apiClient.interceptors.request.use(timestampInterceptor);
 ```typescript
 // Глобальная обработка ошибок
 effect(() => {
-  if (store.isError.value) {
-    const error = store.error.value;
+  if (store.$state.value.type === 'error') {
+    const error = store.$state.value.error;
 
     if (error instanceof HttpError) {
       // Обработка HTTP ошибок
@@ -526,6 +541,7 @@ effect(() => {
 **Возвращает:** API клиент с методами:
 - `createRequest<T>(config)` - создает реактивный запрос
 - `interceptors.request.use(interceptor)` - добавляет интерсептор
+- `interceptors.request.eject(id)` - удаляет интерсептор по ID
 - `invalidateCache(key)` - инвалидирует кэш по ключу
 - `clearCache()` - очищает весь кэш
 - `invalidateCacheByPattern(pattern)` - инвалидирует кэш по паттерну
@@ -578,6 +594,10 @@ effect(() => {
 
 **Возвращает:** функцию, принимающую configs и createCustomStore, которая создает хранилища аналогично `createStoresForKeys`
 
+### `clearAllApiCache()`
+
+Очищает весь кэш API для всех клиентов.
+
 ### `cacheStore.invalidateByPattern(pattern)`
 
 Инвалидирует кэш по регулярному выражению.
@@ -604,6 +624,7 @@ effect(() => {
 ```typescript
 import { createApiClient, createRepository } from '@front-utils/request';
 import Type from 'typebox';
+import { useMemo } from 'react';
 
 const endpoints = [
   {
@@ -619,14 +640,30 @@ const endpoints = [
   }
 ] as const;
 
+// Создаем клиент вне компонента
+const apiClient = createApiClient({ baseURL: 'https://jsonplaceholder.typicode.com' });
+
 function PostsList() {
-  const apiClient = createApiClient({ baseURL: 'https://jsonplaceholder.typicode.com' });
-  const repo = createRepository(endpoints, apiClient);
-  const postsStore = repo.getPosts({ config: { ttl: 2 * 60 * 1000 } }); // 2 минуты
+  // Создаем репозиторий и хранилище с useMemo
+  const repo = useMemo(() => createRepository(endpoints, apiClient), []);
+  const postsStore = useMemo(() => repo.getPosts({ 
+    config: { ttl: 2 * 60 * 1000 } // 2 минуты
+  }), [repo]);
+
+  // Подписываемся на состояние
+  const state = useSignals(() => postsStore.$state.value);
+
+  useEffect(() => {
+    postsStore.request({});
+  }, [postsStore]);
+
+  if (state.type === 'loading') return <div>Загрузка...</div>;
+  if (state.type === 'error') return <div>Ошибка: {state.error.message}</div>;
+  if (state.type !== 'success') return null;
 
   return (
     <div>
-      {postsStore.data.value?.map(post => (
+      {state.data.map(post => (
         <div key={post.id}>
           <h3>{post.title}</h3>
           <p>{post.body}</p>
@@ -640,25 +677,36 @@ function PostsList() {
 ### Создание поста с обработкой ошибок
 
 ```typescript
+import { createApiClient } from '@front-utils/request';
+import { useSignals } from '@preact/signals-react';
+import { useMemo, useState } from 'react';
+
 function CreatePost() {
-  const apiClient = createApiClient({ baseURL: 'https://jsonplaceholder.typicode.com' });
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-
-  const createPostStore = apiClient.createRequest<Post>({
+  
+  // Создаем клиент и хранилище вне компонента
+  const apiClient = useMemo(() => createApiClient({ 
+    baseURL: 'https://jsonplaceholder.typicode.com' 
+  }), []);
+  
+  const createPostStore = useMemo(() => apiClient.createRequest({
     url: '/posts',
     method: 'POST'
-  });
+  }), [apiClient]);
+
+  // Подписываемся на состояние
+  const state = useSignals(() => createPostStore.$state.value);
 
   const handleSubmit = async () => {
     try {
       await createPostStore.request({
         body: { title, body, userId: 1 }
       });
-
-      if (createPostStore.data.value) {
-        console.log('Post created:', createPostStore.data.value);
-      }
+      
+      // Очищаем форму после успешного создания
+      setTitle('');
+      setBody('');
     } catch (error) {
       console.error('Failed to create post:', error);
     }
@@ -676,9 +724,15 @@ function CreatePost() {
         onChange={(e) => setBody(e.target.value)}
         placeholder="Body"
       />
-      <button onClick={handleSubmit}>
-        Создать пост
+      <button onClick={handleSubmit} disabled={state.type === 'loading'}>
+        {state.type === 'loading' ? 'Создание...' : 'Создать пост'}
       </button>
+      
+      {state.type === 'error' && (
+        <div style={{ color: 'red' }}>
+          Ошибка: {state.error.message}
+        </div>
+      )}
     </div>
   );
 }
@@ -689,6 +743,7 @@ function CreatePost() {
 ```typescript
 import { createApiClient, createRepository, createStoresForKeys } from '@front-utils/request';
 import Type from 'typebox';
+import { useMemo } from 'react';
 
 const endpoints = [
   {
@@ -719,11 +774,15 @@ const endpoints = [
 ] as const;
 
 function UserDashboard({ userId }: { userId: number }) {
-  const apiClient = createApiClient({ baseURL: 'https://jsonplaceholder.typicode.com' });
-  const repository = createRepository(endpoints, apiClient);
+  // Создаем клиент и репозиторий вне компонента
+  const apiClient = useMemo(() => createApiClient({ 
+    baseURL: 'https://jsonplaceholder.typicode.com' 
+  }), []);
+  
+  const repository = useMemo(() => createRepository(endpoints, apiClient), [apiClient]);
 
   // Создаем несколько хранилищ с кастомным объединением
-  const dashboardStore = createStoresForKeys(
+  const dashboardStore = useMemo(() => createStoresForKeys(
     repository,
     [
       'getUser',
@@ -736,20 +795,20 @@ function UserDashboard({ userId }: { userId: number }) {
         await stores.getPosts.request({ query: { userId } });
       },
       get user() {
-        return stores.getUser.state.value.type === 'success' ? stores.getUser.state.value.data : null;
+        return stores.getUser.$state.value.type === 'success' ? stores.getUser.$state.value.data : null;
       },
       get posts() {
-        return stores.getPosts.state.value.type === 'success' ? stores.getPosts.state.value.data : [];
+        return stores.getPosts.$state.value.type === 'success' ? stores.getPosts.$state.value.data : [];
       },
       get isLoading() {
-        return stores.getUser.state.value.type === 'loading' || stores.getPosts.state.value.type === 'loading';
+        return stores.getUser.$state.value.type === 'loading' || stores.getPosts.$state.value.type === 'loading';
       }
     })
-  );
+  ), [repository, userId]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     dashboardStore.loadUserData();
-  }, [userId]);
+  }, [dashboardStore]);
 
   if (dashboardStore.isLoading) return <div>Загрузка...</div>;
 
@@ -787,7 +846,7 @@ const userStore = apiClient.createRequest<User>({
   method: 'GET'
 });
 
-const user = userStore.data.value;
+const user = userStore.$state.value.type === 'success' ? userStore.$state.value.data : null;
 ```
 
 ### С React Query
@@ -805,7 +864,70 @@ const userStore = apiClient.createRequest<User>({
   method: 'GET'
 });
 
-const data = userStore.data.value;
-const isLoading = userStore.isLoading.value;
-const error = userStore.error.value;
+const data = userStore.$state.value.type === 'success' ? userStore.$state.value.data : null;
+const isLoading = userStore.$state.value.type === 'loading';
+const error = userStore.$state.value.type === 'error' ? userStore.$state.value.error : null;
 ```
+
+## 📈 Лучшие практики
+
+### 1. Создание клиентов вне компонентов
+
+```typescript
+// ❌ Плохо - создание клиента внутри компонента
+function MyComponent() {
+  const apiClient = createApiClient({ baseURL: 'https://api.example.com' });
+  // ...
+}
+
+// ✅ Хорошо - создание клиента вне компонента
+const apiClient = createApiClient({ baseURL: 'https://api.example.com' });
+
+function MyComponent() {
+  // Используем уже созданный клиент
+}
+```
+
+### 2. Использование useMemo для хранилищ
+
+```typescript
+// ❌ Плохо - создание хранилища при каждом рендере
+function MyComponent() {
+  const userStore = userRepo.getUser({}); // Создается при каждом рендере
+}
+
+// ✅ Хорошо - использование useMemo
+function MyComponent() {
+  const userStore = useMemo(() => userRepo.getUser({}), []);
+}
+```
+
+### 3. Правильная обработка состояний
+
+```typescript
+// ✅ Хорошо - полная обработка всех состояний
+const state = useSignals(() => userStore.$state.value);
+
+switch (state.type) {
+  case 'idle':
+    return <div>Готов к запросу</div>;
+  case 'loading':
+    return <div>Загрузка...</div>;
+  case 'success':
+    return <UserView user={state.data} />;
+  case 'empty':
+    return <div>Данные отсутствуют</div>;
+  case 'error':
+    return <ErrorView error={state.error} />;
+}
+```
+
+### 4. Очистка ресурсов
+
+```typescript
+// ✅ Хорошо - очистка ресурсов при размонтировании
+useEffect(() => {
+  return () => {
+    userStore.destroy(); // Очищаем хранилище
+  };
+}, [userStore]);
